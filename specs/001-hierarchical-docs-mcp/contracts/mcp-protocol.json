@@ -1,0 +1,494 @@
+{
+  "protocol": "Model Context Protocol (MCP)",
+  "version": "1.0",
+  "server": {
+    "name": "hierarchical-docs",
+    "version": "1.0.0",
+    "description": "MCP server for hierarchical documentation navigation with markdown and OpenAPI support",
+    "capabilities": {
+      "tools": true,
+      "resources": true,
+      "prompts": false
+    }
+  },
+  "tools": [
+    {
+      "name": "search_documentation",
+      "description": "Search through documentation with hierarchical context. Returns results with breadcrumb paths showing document location in the hierarchy.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query string to match against document content",
+            "maxLength": 500
+          },
+          "category": {
+            "type": "string",
+            "description": "Optional category to limit search scope (e.g., 'guides', 'api-reference')"
+          },
+          "depth": {
+            "type": "integer",
+            "description": "Maximum hierarchy depth to search (default: 3)",
+            "default": 3,
+            "minimum": 1,
+            "maximum": 10
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "Maximum number of results to return (default: 10)",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": ["query"]
+      },
+      "outputSchema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Document title"
+            },
+            "path": {
+              "type": "string",
+              "description": "Relative file path"
+            },
+            "uri": {
+              "type": "string",
+              "description": "MCP resource URI (e.g., docs://guides/security/auth)"
+            },
+            "breadcrumbs": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Hierarchical path components"
+            },
+            "category": {
+              "type": "string",
+              "description": "Top-level category"
+            },
+            "excerpt": {
+              "type": "string",
+              "description": "Content excerpt showing match context"
+            },
+            "relevance_score": {
+              "type": "number",
+              "description": "Match quality score (0.0 to 1.0)"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "code": "INVALID_QUERY",
+          "description": "Query string is invalid or too long"
+        },
+        {
+          "code": "CATEGORY_NOT_FOUND",
+          "description": "Specified category does not exist"
+        }
+      ]
+    },
+    {
+      "name": "navigate_to",
+      "description": "Navigate to specific location in documentation hierarchy. Provides context about current location, available children, and navigation options.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Target path (e.g., 'guides/security' or 'guides/security/authentication')"
+          },
+          "context": {
+            "type": "string",
+            "description": "Optional context hint for navigation"
+          }
+        },
+        "required": ["target"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "object",
+            "properties": {
+              "path": {"type": "string"},
+              "type": {
+                "type": "string",
+                "enum": ["category", "document"]
+              },
+              "uri": {"type": "string"}
+            }
+          },
+          "breadcrumbs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "uri": {"type": "string"}
+              }
+            }
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "type": {
+                  "type": "string",
+                  "enum": ["category", "document"]
+                },
+                "uri": {"type": "string"}
+              }
+            }
+          },
+          "parent": {
+            "type": "string",
+            "description": "Parent URI (null if at root)"
+          }
+        }
+      },
+      "errors": [
+        {
+          "code": "PATH_NOT_FOUND",
+          "description": "Target path does not exist"
+        },
+        {
+          "code": "INVALID_PATH",
+          "description": "Path contains invalid characters or traversal attempts"
+        }
+      ]
+    },
+    {
+      "name": "get_table_of_contents",
+      "description": "Generate hierarchical table of contents. Returns nested structure showing full documentation hierarchy with document counts at each level.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Optional starting path (empty = root)",
+            "default": ""
+          },
+          "max_depth": {
+            "type": "integer",
+            "description": "Maximum depth to traverse (default: unlimited)",
+            "minimum": 1
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "type": {
+            "type": "string",
+            "enum": ["category", "document"]
+          },
+          "uri": {"type": "string"},
+          "children": {
+            "type": "array",
+            "items": {"$ref": "#/outputSchema"}
+          },
+          "document_count": {"type": "integer"}
+        }
+      }
+    },
+    {
+      "name": "search_by_metadata",
+      "description": "Search documentation by metadata fields (tags, categories, custom frontmatter). Enables tag-based discovery independent of file system structure.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tags": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Filter by tags (OR logic)"
+          },
+          "category": {
+            "type": "string",
+            "description": "Filter by category"
+          },
+          "parent": {
+            "type": "string",
+            "description": "Filter by parent document reference"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": {"type": "string"},
+            "path": {"type": "string"},
+            "uri": {"type": "string"},
+            "metadata": {
+              "type": "object",
+              "description": "Full frontmatter metadata"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "list_api_endpoints",
+      "description": "List API operations from loaded OpenAPI specifications. Can filter by tag for organization.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "string",
+            "description": "Optional OpenAPI tag to filter operations"
+          },
+          "spec_name": {
+            "type": "string",
+            "description": "Optional spec name if multiple loaded"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "operation_id": {"type": "string"},
+            "method": {"type": "string"},
+            "path": {"type": "string"},
+            "uri": {"type": "string"},
+            "tag": {"type": "string"},
+            "summary": {"type": "string"},
+            "deprecated": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    {
+      "name": "get_endpoint_docs",
+      "description": "Retrieve detailed documentation for a specific API endpoint including parameters, request/response schemas.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "description": "Unique operation identifier from OpenAPI spec"
+          }
+        },
+        "required": ["operation_id"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "operation_id": {"type": "string"},
+          "method": {"type": "string"},
+          "path": {"type": "string"},
+          "summary": {"type": "string"},
+          "description": {"type": "string"},
+          "parameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"},
+                "in": {
+                  "type": "string",
+                  "enum": ["path", "query", "header", "cookie"]
+                },
+                "required": {"type": "boolean"},
+                "schema": {"type": "object"},
+                "description": {"type": "string"}
+              }
+            }
+          },
+          "request_body": {
+            "type": "object",
+            "properties": {
+              "required": {"type": "boolean"},
+              "content": {"type": "object"}
+            }
+          },
+          "responses": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "description": {"type": "string"},
+                "content": {"type": "object"}
+              }
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "code": "OPERATION_NOT_FOUND",
+          "description": "Operation ID does not exist in loaded specs"
+        }
+      ]
+    },
+    {
+      "name": "get_schema_definition",
+      "description": "Retrieve OpenAPI schema definition for a data model.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "schema_name": {
+            "type": "string",
+            "description": "Schema name from OpenAPI components.schemas"
+          },
+          "spec_name": {
+            "type": "string",
+            "description": "Optional spec name if multiple loaded"
+          }
+        },
+        "required": ["schema_name"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "type": {"type": "string"},
+          "properties": {"type": "object"},
+          "required": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "description": {"type": "string"}
+        }
+      },
+      "errors": [
+        {
+          "code": "SCHEMA_NOT_FOUND",
+          "description": "Schema name does not exist in loaded specs"
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "uri": "docs://",
+      "name": "Documentation Root",
+      "description": "List all documentation categories",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "docs://{category}",
+      "name": "Documentation Category",
+      "description": "List sections and documents within a category",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "docs://{category}/{section}",
+      "name": "Documentation Section",
+      "description": "List documents within a section",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "docs://{category}/{section}/{document}",
+      "name": "Documentation Document",
+      "description": "Retrieve full document content with metadata",
+      "mimeType": "text/markdown"
+    },
+    {
+      "uri": "api://{tag}",
+      "name": "API Operations by Tag",
+      "description": "List all operations with specified OpenAPI tag",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "api://{tag}/{operation_id}",
+      "name": "API Operation Details",
+      "description": "Detailed documentation for specific API endpoint",
+      "mimeType": "application/json"
+    }
+  ],
+  "transports": [
+    {
+      "type": "stdio",
+      "description": "Standard input/output for local AI assistant integration",
+      "platforms": ["Claude Desktop", "VS Code with Copilot"]
+    },
+    {
+      "type": "http",
+      "description": "HTTP/SSE for remote server deployment",
+      "authentication": ["api_token"]
+    }
+  ],
+  "configuration": {
+    "required": {
+      "DOCS_ROOT": {
+        "type": "string",
+        "description": "Path to documentation root directory"
+      }
+    },
+    "optional": {
+      "MCP_DOCS_SOURCES": {
+        "type": "array",
+        "description": "Additional documentation sources (JSON array)"
+      },
+      "MCP_DOCS_OPENAPI_SPECS": {
+        "type": "array",
+        "description": "Paths to OpenAPI specification files"
+      },
+      "MCP_DOCS_CACHE_TTL": {
+        "type": "integer",
+        "description": "Cache time-to-live in seconds (default: 3600)",
+        "default": 3600
+      },
+      "MCP_DOCS_MAX_DEPTH": {
+        "type": "integer",
+        "description": "Maximum hierarchy depth (default: 10)",
+        "default": 10
+      },
+      "MCP_DOCS_ENABLE_FILE_WATCHING": {
+        "type": "boolean",
+        "description": "Enable automatic cache invalidation on file changes (default: true)",
+        "default": true
+      }
+    }
+  },
+  "security": {
+    "path_validation": {
+      "description": "All file paths validated to prevent directory traversal",
+      "rules": [
+        "Paths must resolve within configured documentation root",
+        "Hidden files (starting with '.') are blocked",
+        "Parent directory references ('..') are rejected"
+      ]
+    },
+    "input_sanitization": {
+      "description": "All user inputs sanitized before processing",
+      "rules": [
+        "Search queries limited to 500 characters",
+        "Control characters removed from queries",
+        "Special regex characters escaped"
+      ]
+    },
+    "audit_logging": {
+      "description": "All file access attempts logged for security audits",
+      "logged_events": [
+        "Document access",
+        "Search queries",
+        "Navigation requests",
+        "Security violations"
+      ]
+    }
+  },
+  "error_codes": {
+    "INVALID_QUERY": "Search query is invalid or exceeds length limit",
+    "CATEGORY_NOT_FOUND": "Specified category does not exist",
+    "PATH_NOT_FOUND": "Target path does not exist in documentation",
+    "INVALID_PATH": "Path contains invalid characters or security violations",
+    "OPERATION_NOT_FOUND": "OpenAPI operation ID not found in loaded specs",
+    "SCHEMA_NOT_FOUND": "OpenAPI schema name not found in loaded specs",
+    "SECURITY_VIOLATION": "Request blocked due to security validation failure",
+    "SPEC_VALIDATION_ERROR": "OpenAPI specification failed validation",
+    "FILE_ACCESS_ERROR": "Unable to read documentation file",
+    "TIMEOUT": "Operation exceeded timeout limit"
+  }
+}
