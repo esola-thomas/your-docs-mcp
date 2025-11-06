@@ -1,6 +1,6 @@
 """Caching layer with TTL and file change detection."""
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
