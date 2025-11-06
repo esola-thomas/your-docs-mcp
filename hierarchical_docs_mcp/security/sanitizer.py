@@ -1,8 +1,6 @@
 """Query and content sanitization to prevent injection attacks."""
 
 import re
-from typing import Optional
-
 from hierarchical_docs_mcp.utils.logger import audit_log, logger
 
 
