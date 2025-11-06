@@ -1,6 +1,5 @@
 """Hierarchical navigation and category tree building."""
 
-from pathlib import Path
 from typing import Optional
 
 from hierarchical_docs_mcp.models.document import Document
