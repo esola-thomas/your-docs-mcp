@@ -1,7 +1,7 @@
 ---
-title: Configuration Guide
+title: "Configuration Guide"
 tags: [configuration, setup, environment, settings]
-category: guides
+category: "Guides"
 order: 2
 ---
 

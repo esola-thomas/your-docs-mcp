@@ -1,7 +1,7 @@
 ---
 title: API Endpoints Reference
 tags: [api, endpoints, reference, rest]
-category: api
+category: "API Reference"
 order: 2
 ---
 
@@ -13,7 +13,7 @@ Complete reference for all available API endpoints.
 
 All API requests should be made to:
 
-```
+```text
 https://api.example.com/v1
 ```
 
@@ -345,7 +345,7 @@ All endpoints are subject to rate limiting. Current limits:
 
 Rate limit information is included in response headers:
 
-```
+```text
 X-RateLimit-Limit: 1000
 X-RateLimit-Remaining: 999
 X-RateLimit-Reset: 1640000000

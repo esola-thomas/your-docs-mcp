@@ -1,7 +1,7 @@
 ---
-title: API Authentication
-tags: [api, authentication, security, auth, oauth, jwt]
-category: api
+title: "API Authentication"
+tags: ["api", "authentication", "security", "auth", "oauth", "jwt"]
+category: "API Reference"
 order: 1
 ---
 
@@ -241,7 +241,7 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   https://api.example.com/v1/auth/verify
 ```
 
-### Expected Response
+## Expected Response
 
 ```json
 {

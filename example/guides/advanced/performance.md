@@ -1,7 +1,7 @@
 ---
 title: Performance Optimization
 tags: [advanced, performance, optimization, caching, tuning]
-category: guides
+category: "Guides"
 order: 10
 ---
 
@@ -23,7 +23,7 @@ export MCP_DOCS_CACHE_TTL=7200  # 2 hours
 export MCP_DOCS_MAX_CACHE_MB=1000  # 1 GB
 ```
 
-### When to Clear Cache
+## When to Clear Cache
 
 The server automatically invalidates cache when files change. Manual clearing is rarely needed, but you can restart the server to clear all caches.
 
@@ -40,7 +40,7 @@ Organize files for optimal performance:
 
 ### Example Structure
 
-```
+```text
 docs/
 ├── guides/           # Good: organized by type
 │   ├── getting-started.md
@@ -62,7 +62,7 @@ The server builds search indexes on startup. For large documentation sets:
 export MCP_DOCS_SEARCH_LIMIT=10
 ```
 
-### Optimize Search Queries
+## Optimize Search Queries
 
 - Use specific terms instead of generic words
 - Use tags and categories to filter results
@@ -82,7 +82,7 @@ export MCP_DOCS_MAX_CACHE_MB=500
 export MCP_DOCS_AUDIT_LOG=true
 ```
 
-### Reduce Memory Footprint
+## Reduce Memory Footprint
 
 1. **Exclude unnecessary files**: Use exclude patterns in config
 2. **Disable file watching**: Set `watch_files: false` for static docs
@@ -111,7 +111,7 @@ export LOG_LEVEL=DEBUG
 hierarchical-docs-mcp
 ```
 
-### Performance Metrics
+## Performance Metrics
 
 Key metrics to monitor:
 - **File scan time**: Should be < 1s for 1000 files
@@ -140,7 +140,7 @@ LOG_LEVEL=WARN
 MCP_DOCS_AUDIT_LOG=true
 ```
 
-### Scaling Considerations
+## Scaling Considerations
 
 - **Horizontal scaling**: Deploy multiple instances behind a load balancer
 - **CDN integration**: Cache static file responses

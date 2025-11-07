@@ -1,17 +1,29 @@
+---
+title: "Example Documentation Structure"
+category: "Documentation"
+tags: ["example", "template", "structure"]
+order: 1
+description: "Complete example showing how to structure documentation for the MCP server"
+---
+
 # Example Documentation Structure
 
-This folder demonstrates how to structure your documentation for use with the Hierarchical Documentation MCP server.
+This folder demonstrates how to structure your documentation for use with the
+Hierarchical Documentation MCP server.
 
 ## Overview
 
-This is a complete, working example that you can use as a template for your own documentation. You can:
+This is a complete, working example that you can use as a template for your
+own documentation. You can:
+
 - Copy this entire folder to use as a starting point
-- Point your DOCS_ROOT environment variable to this folder to test the MCP server
+- Point your DOCS_ROOT environment variable to this folder to test the MCP
+  server
 - Modify the structure to match your project's needs
 
 ## Directory Structure
 
-```
+```text
 example/
 ├── README.md                    # This file - explains the structure
 ├── guides/                      # User guides and tutorials
@@ -45,7 +57,7 @@ order: 1
 Your content here...
 ```
 
-### Frontmatter Fields
+## Frontmatter Fields
 
 - **title** (required): The display title for the document
 - **tags** (optional): Array of tags for searchability and filtering
@@ -67,7 +79,9 @@ Documents are organized hierarchically using the `docs://` URI scheme:
 
 ## OpenAPI Support
 
-You can include OpenAPI 3.x specifications (`.yaml` or `.json` files) in any directory. These will be automatically parsed and made available through the MCP server.
+You can include OpenAPI 3.x specifications (`.yaml` or `.json` files) in any
+directory. These will be automatically parsed and made available through the
+MCP server.
 
 ## Testing This Example
 
@@ -84,10 +98,10 @@ To test this example with the MCP server:
    ```
 
 3. Ask your AI assistant:
-   - "List all available documentation"
-   - "Show me the getting started guide"
-   - "Search for authentication"
-   - "What API endpoints are available?"
+  - "List all available documentation"
+  - "Show me the getting started guide"
+  - "Search for authentication"
+  - "What API endpoints are available?"
 
 ## Customizing for Your Project
 

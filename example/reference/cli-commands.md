@@ -1,7 +1,7 @@
 ---
 title: CLI Commands Reference
 tags: [cli, command-line, reference, terminal]
-category: reference
+category: "Reference"
 order: 1
 ---
 
@@ -66,7 +66,7 @@ hierarchical-docs-mcp --log-level DEBUG
 hierarchical-docs-mcp --config /path/to/.mcp-docs.yaml
 ```
 
-### validate
+## validate
 
 Validate documentation structure and metadata.
 
@@ -99,7 +99,7 @@ hierarchical-docs-mcp validate --check-links /path/to/docs
 
 **Output:**
 
-```
+```text
 Validating documentation at: /path/to/docs
 
 ✓ Found 15 documents
@@ -115,7 +115,7 @@ Summary:
   Errors: 0
 ```
 
-### index
+## index
 
 Build or rebuild the search index.
 
@@ -142,7 +142,7 @@ hierarchical-docs-mcp index /path/to/docs
 hierarchical-docs-mcp index --rebuild --optimize /path/to/docs
 ```
 
-### search
+## search
 
 Search documentation from the command line.
 
@@ -177,7 +177,7 @@ hierarchical-docs-mcp search "setup" --format json
 
 **Output:**
 
-```
+```text
 Search results for: "authentication"
 
 1. API Authentication (docs://api/authentication)
@@ -195,7 +195,7 @@ Search results for: "authentication"
 Found 2 results
 ```
 
-### stats
+## stats
 
 Show documentation statistics.
 
@@ -224,7 +224,7 @@ hierarchical-docs-mcp stats --detailed --format json /path/to/docs
 
 **Output:**
 
-```
+```text
 Documentation Statistics
 ========================
 
@@ -250,7 +250,7 @@ Size:
 Last updated: 2024-01-15 10:30:00
 ```
 
-### serve
+## serve
 
 Start a development server with live reload.
 
@@ -278,7 +278,7 @@ hierarchical-docs-mcp serve /path/to/docs
 hierarchical-docs-mcp serve --watch --port 3000 /path/to/docs
 ```
 
-### export
+## export
 
 Export documentation in various formats.
 
@@ -310,7 +310,7 @@ hierarchical-docs-mcp export --format html --include-metadata \
 hierarchical-docs-mcp export --compress /path/to/docs ./docs.tar.gz
 ```
 
-### config
+## config
 
 Manage configuration.
 
@@ -403,7 +403,7 @@ logging:
 
 ## Troubleshooting
 
-### Command not found
+## Command not found
 
 ```bash
 # Verify installation
@@ -413,7 +413,7 @@ pip show hierarchical-docs-mcp
 which hierarchical-docs-mcp
 ```
 
-### Permission denied
+## Permission denied
 
 ```bash
 # Install with --user flag
@@ -425,7 +425,7 @@ source venv/bin/activate
 pip install hierarchical-docs-mcp
 ```
 
-### Configuration errors
+## Configuration errors
 
 ```bash
 # Validate config

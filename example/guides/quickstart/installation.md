@@ -1,7 +1,7 @@
 ---
-title: Installation Guide
+title: "Installation Guide"
 tags: [quickstart, installation, setup, beginner]
-category: guides
+category: "Guides"
 order: 1
 ---
 
