@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Literal, Optional
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -43,7 +43,10 @@ class ServerConfig(BaseSettings):
     )
 
     # Documentation root (single source mode)
-    docs_root: Optional[Path] = Field(None, validation_alias="DOCS_ROOT")
+    docs_root: Optional[Path] = Field(
+        None,
+        validation_alias=AliasChoices("docs_root", "DOCS_ROOT", "MCP_DOCS_DOCS_ROOT"),
+    )
 
     # Multi-source configuration file
     config_file: Optional[Path] = None
