@@ -1,0 +1,114 @@
+# Example GitHub Actions Workflow
+# This is a complete example showing how to use the validate-docs action
+# Copy this file to .github/workflows/ directory
+
+name: Documentation Validation
+
+on:
+  # Trigger on push to any branch
+  push:
+    branches: ["**"]
+    paths:
+      - 'docs/**'
+      - '*.md'
+      - 'scripts/validate_docs.py'
+      - '.github/actions/validate-docs/**'
+
+  # Trigger on pull requests to main branches
+  pull_request:
+    branches: ["main", "master", "develop"]
+    paths:
+      - 'docs/**'
+      - '*.md'
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  # Basic validation job
+  validate-docs:
+    name: Validate Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # Use the reusable composite action - just like actions/setup-python@v6!
+      - name: Validate documentation
+        uses: ./.github/actions/validate-docs
+        with:
+          paths: 'docs/ README.md'
+          python-version: '3.11'
+          fail-on-warnings: 'false'
+          generate-report: 'true'
+          upload-report: 'true'
+
+  # Strict validation for main branch
+  validate-docs-strict:
+    name: Strict Validation (Main Only)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Validate documentation (strict mode)
+        uses: ./.github/actions/validate-docs
+        with:
+          paths: 'docs/ README.md CONTRIBUTING.md'
+          python-version: '3.11'
+          fail-on-warnings: 'true'  # Fail on warnings for main branch
+          generate-report: 'true'
+
+  # Validate different documentation sections in parallel
+  validate-sections:
+    name: Validate Documentation Sections
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        section:
+          - { path: 'docs/guides/', name: 'Guides' }
+          - { path: 'docs/api/', name: 'API Reference' }
+          - { path: 'README.md', name: 'README' }
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Validate ${{ matrix.section.name }}
+        uses: ./.github/actions/validate-docs
+        with:
+          paths: ${{ matrix.section.path }}
+          python-version: '3.11'
+          report-path: 'validation-${{ matrix.section.name }}.md'
+
+  # Build documentation after validation
+  build-docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    needs: validate-docs
+    if: success()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Build documentation site
+        run: echo "Build documentation site here"
+
+  # Deploy documentation (only on main branch)
+  deploy-docs:
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: [validate-docs, build-docs]
+    if: github.ref == 'refs/heads/main' && success()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Deploy to documentation site
+        run: echo "Deploy documentation here"
