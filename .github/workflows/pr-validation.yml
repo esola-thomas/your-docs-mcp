@@ -120,28 +120,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyyaml
-
       - name: Validate documentation
-        run: |
-          python scripts/validate_docs.py docs/ README.md .github/CONTRIBUTING.md
-
-      - name: Upload validation report
-        if: failure()
-        uses: actions/upload-artifact@v5
+        uses: ./.github/actions/validate-docs
         with:
-          name: documentation-validation-report
-          path: validation-report.md
-          if-no-files-found: ignore
+          paths: 'docs/ README.md .github/CONTRIBUTING.md'
+          python-version: '3.11'
+          fail-on-warnings: 'false'
+          generate-report: 'true'
+          upload-report: 'true'
 
   test-summary:
     name: Test Summary
