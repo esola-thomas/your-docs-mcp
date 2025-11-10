@@ -1,7 +1,7 @@
 """Unit tests for MCP server implementation."""
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -200,18 +200,25 @@ class TestServerHandlers:
                 category="test",
                 tags=["tag1"],
                 file_path="/test/doc1.md",
-                last_modified=datetime.now(timezone.utc),
+                relative_path="test/doc1.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),
             )
         ]
 
         # Add sample categories
         server.categories = {
             "docs://test": Category(
+                
+                name="test",
                 uri="docs://test",
+                depth=1,
                 label="Test",
                 child_documents=["docs://test/doc1"],
+                source_category="test",
                 child_categories=[],
                 document_count=1,
+            
             )
         }
 

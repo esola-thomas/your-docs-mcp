@@ -1,6 +1,6 @@
 """Unit tests for MCP resource handlers."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -16,24 +16,24 @@ class TestHandleResourceRead:
     def sample_documents(self):
         """Create sample documents for testing."""
         return [
-            Document(
-                uri="docs://guides/getting-started",
+            Document(uri="docs://guides/getting-started",
                 title="Getting Started",
                 content="# Getting Started\n\nWelcome to the guide.",
                 category="guides",
                 tags=["tutorial"],
                 file_path="/docs/guides/getting-started.md",
-                last_modified=datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
-            ),
-            Document(
-                uri="docs://api/authentication",
+                relative_path="docs/guides/getting-started.md",
+                size_bytes=100,
+                last_modified=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),),
+            Document(uri="docs://api/authentication",
                 title="Authentication API",
                 content="# Authentication\n\nAPI documentation.",
                 category="api",
                 tags=["security"],
                 file_path="/docs/api/authentication.md",
-                last_modified=datetime(2024, 1, 2, 12, 0, 0, tzinfo=timezone.utc),
-            ),
+                relative_path="docs/api/authentication.md",
+                size_bytes=100,
+                last_modified=datetime(2024, 1, 2, 12, 0, 0, tzinfo=UTC),),
         ]
 
     @pytest.fixture
@@ -41,23 +41,35 @@ class TestHandleResourceRead:
         """Create sample categories for testing."""
         return {
             "docs://guides": Category(
+                
+                name="guides",
                 uri="docs://guides",
+                depth=1,
                 label="Guides",
                 child_documents=["docs://guides/getting-started"],
+                source_category="guides",
                 child_categories=[],
                 document_count=1,
             ),
             "docs://api": Category(
+                
+                name="api",
                 uri="docs://api",
+                depth=1,
                 label="API",
                 child_documents=["docs://api/authentication"],
+                source_category="api",
                 child_categories=[],
                 document_count=1,
             ),
             "docs://": Category(
+                
+                name="root",
                 uri="docs://",
+                depth=0,
                 label="Root",
                 child_documents=[],
+                source_category="root",
                 child_categories=["docs://guides", "docs://api"],
                 document_count=2,
             ),
@@ -67,8 +79,7 @@ class TestHandleResourceRead:
     async def test_read_document_resource(self, sample_documents, sample_categories):
         """Test reading a document resource."""
         result = await handle_resource_read(
-            "docs://guides/getting-started", sample_documents, sample_categories
-        )
+            "docs://guides/getting-started", sample_documents, sample_categories)
 
         assert "uri" in result
         assert result["uri"] == "docs://guides/getting-started"
@@ -84,8 +95,7 @@ class TestHandleResourceRead:
     async def test_read_document_includes_last_modified(self, sample_documents, sample_categories):
         """Test reading document includes last_modified timestamp."""
         result = await handle_resource_read(
-            "docs://guides/getting-started", sample_documents, sample_categories
-        )
+            "docs://guides/getting-started", sample_documents, sample_categories)
 
         assert "last_modified" in result["metadata"]
         assert result["metadata"]["last_modified"] == "2024-01-01T12:00:00+00:00"
@@ -94,8 +104,7 @@ class TestHandleResourceRead:
     async def test_read_category_resource(self, sample_documents, sample_categories):
         """Test reading a category resource."""
         result = await handle_resource_read(
-            "docs://guides", sample_documents, sample_categories
-        )
+            "docs://guides", sample_documents, sample_categories)
 
         assert "uri" in result
         assert result["uri"] == "docs://guides"
@@ -122,8 +131,7 @@ class TestHandleResourceRead:
     async def test_read_category_with_documents(self, sample_documents, sample_categories):
         """Test reading a category with child documents."""
         result = await handle_resource_read(
-            "docs://guides", sample_documents, sample_categories
-        )
+            "docs://guides", sample_documents, sample_categories)
 
         text = result["text"]
         assert "Documents" in text
@@ -134,8 +142,7 @@ class TestHandleResourceRead:
     async def test_read_nonexistent_resource(self, sample_documents, sample_categories):
         """Test reading a non-existent resource."""
         result = await handle_resource_read(
-            "docs://nonexistent", sample_documents, sample_categories
-        )
+            "docs://nonexistent", sample_documents, sample_categories)
 
         assert "error" in result
         assert "not found" in result["error"].lower()
@@ -152,15 +159,15 @@ class TestHandleResourceRead:
     async def test_read_document_with_multiple_tags(self):
         """Test reading document with multiple tags."""
         documents = [
-            Document(
-                uri="docs://test",
+            Document(uri="docs://test",
                 title="Test Doc",
                 content="Content",
                 category="test",
                 tags=["tag1", "tag2", "tag3"],
                 file_path="/test.md",
-                last_modified=datetime.now(timezone.utc),
-            )
+                relative_path="test.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),)
         ]
 
         result = await handle_resource_read("docs://test", documents, {})
@@ -171,8 +178,7 @@ class TestHandleResourceRead:
     async def test_read_category_content_format(self, sample_documents, sample_categories):
         """Test category content is formatted correctly."""
         result = await handle_resource_read(
-            "docs://guides", sample_documents, sample_categories
-        )
+            "docs://guides", sample_documents, sample_categories)
 
         text = result["text"]
         # Check markdown formatting
@@ -184,15 +190,23 @@ class TestHandleResourceRead:
         """Test reading category with both subcategories and documents."""
         categories = {
             "docs://parent": Category(
+                
+                name="parent",
                 uri="docs://parent",
+                depth=1,
                 label="Parent",
+                source_category="parent",
                 child_categories=["docs://parent/child"],
                 child_documents=["docs://parent/doc"],
                 document_count=2,
             ),
             "docs://parent/child": Category(
+                
+                name="parent/child",
                 uri="docs://parent/child",
+                depth=2,
                 label="Child",
+                source_category="parent/child",
                 child_categories=[],
                 child_documents=[],
                 document_count=0,
@@ -200,15 +214,15 @@ class TestHandleResourceRead:
         }
 
         documents = [
-            Document(
-                uri="docs://parent/doc",
+            Document(uri="docs://parent/doc",
                 title="Parent Doc",
                 content="Content",
                 category="parent",
                 tags=[],
                 file_path="/parent/doc.md",
-                last_modified=datetime.now(timezone.utc),
-            )
+                relative_path="parent/doc.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),)
         ]
 
         result = await handle_resource_read("docs://parent", documents, categories)
@@ -224,8 +238,12 @@ class TestHandleResourceRead:
         """Test reading an empty category."""
         categories = {
             "docs://empty": Category(
+                
+                name="empty",
                 uri="docs://empty",
+                depth=1,
                 label="Empty",
+                source_category="empty",
                 child_categories=[],
                 child_documents=[],
                 document_count=0,
@@ -245,24 +263,24 @@ class TestListResources:
     def sample_documents(self):
         """Create sample documents for testing."""
         return [
-            Document(
-                uri="docs://guides/getting-started",
+            Document(uri="docs://guides/getting-started",
                 title="Getting Started",
                 content="This is an introduction guide for new users.",
                 category="guides",
                 tags=["tutorial"],
                 file_path="/docs/guides/getting-started.md",
-                last_modified=datetime.now(timezone.utc),
-            ),
-            Document(
-                uri="docs://api/authentication",
+                relative_path="docs/guides/getting-started.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),),
+            Document(uri="docs://api/authentication",
                 title="Authentication",
                 content="API authentication documentation.",
                 category="api",
                 tags=["security"],
                 file_path="/docs/api/authentication.md",
-                last_modified=datetime.now(timezone.utc),
-            ),
+                relative_path="docs/api/authentication.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),),
         ]
 
     @pytest.fixture
@@ -270,16 +288,24 @@ class TestListResources:
         """Create sample categories for testing."""
         return {
             "docs://guides": Category(
+                
+                name="guides",
                 uri="docs://guides",
+                depth=1,
                 label="Guides",
                 child_documents=[],
+                source_category="guides",
                 child_categories=[],
                 document_count=1,
             ),
             "docs://api": Category(
+                
+                name="api",
                 uri="docs://api",
+                depth=1,
                 label="API",
                 child_documents=[],
+                source_category="api",
                 child_categories=[],
                 document_count=1,
             ),
@@ -388,9 +414,13 @@ class TestListResources:
         """Test category description includes document count."""
         categories = {
             "docs://test": Category(
+                
+                name="test",
                 uri="docs://test",
+                depth=1,
                 label="Test",
                 child_documents=[],
+                source_category="test",
                 child_categories=[],
                 document_count=5,
             )
@@ -413,16 +443,22 @@ class TestListResources:
                 category="test",
                 tags=[],
                 file_path=f"/test/doc{i}.md",
-                last_modified=datetime.now(timezone.utc),
+                relative_path=f"test/doc{i}.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),
             )
             for i in range(3)
         ]
 
         categories = {
             "docs://test": Category(
+                
+                name="test",
                 uri="docs://test",
+                depth=1,
                 label="Test",
                 child_documents=[d.uri for d in documents],
+                source_category="test",
                 child_categories=[],
                 document_count=3,
             )

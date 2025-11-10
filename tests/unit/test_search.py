@@ -1,6 +1,6 @@
 """Unit tests for search functionality."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
@@ -23,36 +23,36 @@ class TestSearchContent:
     def sample_documents(self):
         """Create sample documents for testing."""
         return [
-            Document(
-                uri="docs://guides/getting-started",
+            Document(uri="docs://guides/getting-started",
                 title="Getting Started Guide",
                 content="This is a comprehensive guide to getting started with the system. "
                 "It covers installation, configuration, and basic usage.",
                 category="guides",
                 tags=["tutorial", "beginner"],
                 file_path="/docs/guides/getting-started.md",
-                last_modified=datetime.now(timezone.utc),
-            ),
-            Document(
-                uri="docs://api/authentication",
+                relative_path="docs/guides/getting-started.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),),
+            Document(uri="docs://api/authentication",
                 title="Authentication API",
                 content="The authentication API provides endpoints for user login, "
                 "logout, and token management. Use JWT tokens for secure access.",
                 category="api",
                 tags=["security", "api"],
                 file_path="/docs/api/authentication.md",
-                last_modified=datetime.now(timezone.utc),
-            ),
-            Document(
-                uri="docs://guides/advanced",
+                relative_path="docs/api/authentication.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),),
+            Document(uri="docs://guides/advanced",
                 title="Advanced Topics",
                 content="Advanced configuration options and optimization techniques. "
                 "Learn how to fine-tune performance and customize behavior.",
                 category="guides",
                 tags=["advanced", "tutorial"],
                 file_path="/docs/guides/advanced.md",
-                last_modified=datetime.now(timezone.utc),
-            ),
+                relative_path="docs/guides/advanced.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),),
         ]
 
     @pytest.fixture
@@ -64,15 +64,13 @@ class TestSearchContent:
                 label="Guides",
                 child_documents=["docs://guides/getting-started", "docs://guides/advanced"],
                 child_categories=[],
-                document_count=2,
-            ),
+                document_count=2,),
             "docs://api": Category(
                 uri="docs://api",
                 label="API",
                 child_documents=["docs://api/authentication"],
                 child_categories=[],
-                document_count=1,
-            ),
+                document_count=1,),
         }
 
     def test_search_content_basic_query(self, sample_documents, sample_categories):
@@ -116,8 +114,7 @@ class TestSearchContent:
     def test_search_content_with_category_filter(self, sample_documents, sample_categories):
         """Test search with category filter."""
         results = search_content(
-            "guide", sample_documents, sample_categories, category_filter="guides"
-        )
+            "guide", sample_documents, sample_categories, category_filter="guides")
 
         assert len(results) > 0
         assert all("guides" in r.document_uri for r in results)
@@ -211,33 +208,33 @@ class TestSearchByMetadata:
     def sample_documents(self):
         """Create sample documents for testing."""
         return [
-            Document(
-                uri="docs://guides/getting-started",
+            Document(uri="docs://guides/getting-started",
                 title="Getting Started",
                 content="Introduction to the system",
                 category="guides",
                 tags=["tutorial", "beginner"],
                 file_path="/docs/guides/getting-started.md",
-                last_modified=datetime.now(timezone.utc),
-            ),
-            Document(
-                uri="docs://api/authentication",
+                relative_path="docs/guides/getting-started.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),),
+            Document(uri="docs://api/authentication",
                 title="Authentication",
                 content="Authentication details",
                 category="api",
                 tags=["security", "api"],
                 file_path="/docs/api/authentication.md",
-                last_modified=datetime.now(timezone.utc),
-            ),
-            Document(
-                uri="docs://guides/advanced",
+                relative_path="docs/api/authentication.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),),
+            Document(uri="docs://guides/advanced",
                 title="Advanced Guide",
                 content="Advanced topics",
                 category="guides",
                 tags=["tutorial", "advanced"],
                 file_path="/docs/guides/advanced.md",
-                last_modified=datetime.now(timezone.utc),
-            ),
+                relative_path="docs/guides/advanced.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),),
         ]
 
     def test_search_by_tags(self, sample_documents):
@@ -264,8 +261,7 @@ class TestSearchByMetadata:
     def test_search_by_tags_and_category(self, sample_documents):
         """Test searching by both tags and category (AND logic)."""
         results = search_by_metadata(
-            tags=["tutorial"], category="guides", documents=sample_documents
-        )
+            tags=["tutorial"], category="guides", documents=sample_documents)
 
         assert len(results) > 0
         # Should find documents that match BOTH criteria
