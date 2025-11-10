@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -15,9 +15,7 @@ class DocumentationSource(BaseModel):
     label: str
     recursive: bool = True
     include_patterns: list[str] = Field(default_factory=lambda: ["*.md", "*.mdx"])
-    exclude_patterns: list[str] = Field(
-        default_factory=lambda: ["node_modules", ".git", "_*"]
-    )
+    exclude_patterns: list[str] = Field(default_factory=lambda: ["node_modules", ".git", "_*"])
     format_type: str = "markdown"
 
 
@@ -31,9 +29,9 @@ class Document(BaseModel):
     content: str = ""
     frontmatter: dict[str, Any] = Field(default_factory=dict)
     tags: list[str] = Field(default_factory=list)
-    category: Optional[str] = None
+    category: str | None = None
     order: int = 999
-    parent: Optional[str] = None
+    parent: str | None = None
     last_modified: datetime
     size_bytes: int
 

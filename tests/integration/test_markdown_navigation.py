@@ -1,25 +1,23 @@
 """Integration tests for end-to-end markdown navigation workflow."""
 
 import pytest
-from pathlib import Path
 
-from hierarchical_docs_mcp.services.markdown import (
-    parse_markdown_with_metadata,
-    scan_markdown_files,
+from hierarchical_docs_mcp.handlers.resources import handle_resource_read, list_resources
+from hierarchical_docs_mcp.handlers.tools import (
+    handle_get_table_of_contents,
+    handle_navigate_to,
+    handle_search_documentation,
 )
 from hierarchical_docs_mcp.services.hierarchy import (
     build_category_tree,
-    navigate_to_uri,
     get_breadcrumbs,
     get_table_of_contents,
+    navigate_to_uri,
 )
-from hierarchical_docs_mcp.services.search import search_content, search_by_metadata
-from hierarchical_docs_mcp.handlers.tools import (
-    handle_search_documentation,
-    handle_navigate_to,
-    handle_get_table_of_contents,
+from hierarchical_docs_mcp.services.markdown import (
+    scan_markdown_files,
 )
-from hierarchical_docs_mcp.handlers.resources import handle_resource_read, list_resources
+from hierarchical_docs_mcp.services.search import search_by_metadata, search_content
 
 
 @pytest.fixture
@@ -32,7 +30,7 @@ def test_docs_structure(tmp_path):
     guides = doc_root / "guides"
     guides.mkdir()
 
-    (guides / "getting-started.md").write_text("""---
+    (guides / "getting-started.md").write_text(r"""---
 title: Getting Started
 tags: [beginner, tutorial]
 category: guides
@@ -107,7 +105,7 @@ Index your queries properly.
     api = doc_root / "api"
     api.mkdir()
 
-    (api / "authentication.md").write_text("""---
+    (api / "authentication.md").write_text(r"""---
 title: Authentication API
 tags: [api, security, authentication]
 category: api
@@ -311,18 +309,14 @@ class TestMCPToolsIntegration:
         cats = loaded_documentation["categories"]
 
         # Navigate to guides
-        nav_result = await handle_navigate_to(
-            {"uri": "docs://guides"}, docs, cats
-        )
+        nav_result = await handle_navigate_to({"uri": "docs://guides"}, docs, cats)
 
         assert nav_result["current_uri"] == "docs://guides"
         assert len(nav_result["children"]) > 0
 
         # Verify we can navigate to child
         child_uri = nav_result["children"][0]["uri"]
-        child_result = await handle_navigate_to(
-            {"uri": child_uri}, docs, cats
-        )
+        child_result = await handle_navigate_to({"uri": child_uri}, docs, cats)
 
         assert "current_uri" in child_result
 
@@ -369,9 +363,7 @@ class TestMCPResourcesIntegration:
         docs = loaded_documentation["documents"]
         cats = loaded_documentation["categories"]
 
-        result = await handle_resource_read(
-            "docs://guides/getting-started", docs, cats
-        )
+        result = await handle_resource_read("docs://guides/getting-started", docs, cats)
 
         # Should return document content
         assert "text" in result
@@ -477,9 +469,7 @@ class TestRealWorldScenarios:
 
         # User navigates to first result
         first_result_uri = search_results[0]["uri"]
-        nav_result = await handle_navigate_to(
-            {"uri": first_result_uri}, docs, cats
-        )
+        nav_result = await handle_navigate_to({"uri": first_result_uri}, docs, cats)
 
         assert nav_result["current_type"] == "document"
 
@@ -576,9 +566,7 @@ class TestErrorHandling:
         docs = loaded_documentation["documents"]
         cats = loaded_documentation["categories"]
 
-        result = await handle_navigate_to(
-            {"uri": "docs://nonexistent"}, docs, cats
-        )
+        result = await handle_navigate_to({"uri": "docs://nonexistent"}, docs, cats)
 
         assert "error" in result
 

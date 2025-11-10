@@ -1,7 +1,6 @@
 """Path validation to prevent directory traversal attacks."""
 
 from pathlib import Path
-from typing import Optional
 
 from hierarchical_docs_mcp.utils.logger import audit_log, logger
 
@@ -48,9 +47,7 @@ def validate_path(
                     "reason": "outside_allowed_directory",
                 },
             )
-            raise PathValidationError(
-                f"Path is outside allowed directory: {requested_path}"
-            )
+            raise PathValidationError(f"Path is outside allowed directory: {requested_path}")
 
         # Check for hidden files/directories unless explicitly allowed
         if not allow_hidden:
@@ -143,7 +140,7 @@ def is_path_safe(
         return False
 
 
-def detect_symlink_cycle(path: Path, max_depth: int = 20) -> Optional[Path]:
+def detect_symlink_cycle(path: Path, max_depth: int = 20) -> Path | None:
     """Detect circular symlinks in a path.
 
     Args:

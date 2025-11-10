@@ -1,6 +1,6 @@
 """Hierarchical navigation and category tree building."""
 
-from typing import Optional
+from typing import Any
 
 from hierarchical_docs_mcp.models.document import Document
 from hierarchical_docs_mcp.models.navigation import Category, NavigationContext
@@ -123,10 +123,12 @@ def get_breadcrumbs(uri: str) -> list[dict[str, str]]:
 
     for i, part in enumerate(parts):
         crumb_uri = f"{scheme}://" + "/".join(parts[: i + 1])
-        breadcrumbs.append({
-            "name": part.replace("-", " ").replace("_", " ").title(),
-            "uri": crumb_uri,
-        })
+        breadcrumbs.append(
+            {
+                "name": part.replace("-", " ").replace("_", " ").title(),
+                "uri": crumb_uri,
+            }
+        )
 
     return breadcrumbs
 
@@ -221,22 +223,26 @@ def _get_category_context(
     for child_uri in category.child_categories:
         if child_uri in categories:
             child_cat = categories[child_uri]
-            children.append({
-                "type": "category",
-                "uri": child_cat.uri,
-                "name": child_cat.label,
-                "document_count": child_cat.document_count,
-            })
+            children.append(
+                {
+                    "type": "category",
+                    "uri": child_cat.uri,
+                    "name": child_cat.label,
+                    "document_count": child_cat.document_count,
+                }
+            )
 
     # Add child documents (without loading full content)
     for doc_uri in category.child_documents:
         # Extract name from URI
         name = doc_uri.split("/")[-1].replace("-", " ").replace("_", " ").title()
-        children.append({
-            "type": "document",
-            "uri": doc_uri,
-            "name": name,
-        })
+        children.append(
+            {
+                "type": "document",
+                "uri": doc_uri,
+                "name": name,
+            }
+        )
 
     # Determine parent URI
     parent_uri = category.parent_uri or "docs://"
@@ -254,13 +260,7 @@ def _get_category_context(
         parent_uri=parent_uri,
         breadcrumbs=category.breadcrumbs,
         children=children,
-        sibling_count=len(
-            [
-                c
-                for c in categories.values()
-                if c.parent_uri == category.parent_uri
-            ]
-        ),
+        sibling_count=len([c for c in categories.values() if c.parent_uri == category.parent_uri]),
         navigation_options=options,
     )
 
@@ -305,8 +305,8 @@ def _get_document_context(
 def get_table_of_contents(
     categories: dict[str, Category],
     documents: list[Document],
-    max_depth: Optional[int] = None,
-) -> dict[str, any]:
+    max_depth: int | None = None,
+) -> dict[str, Any]:
     """Generate a table of contents tree.
 
     Args:
@@ -335,9 +335,7 @@ def get_table_of_contents(
 
     for root_cat in root_categories:
         if max_depth is None or root_cat.depth < max_depth:
-            toc["children"].append(
-                _build_toc_node(root_cat, categories, documents, max_depth)
-            )
+            toc["children"].append(_build_toc_node(root_cat, categories, documents, max_depth))
 
     # Cache the result
     cache.set(cache_key, toc, ttl=3600)
@@ -349,8 +347,8 @@ def _build_toc_node(
     category: Category,
     categories: dict[str, Category],
     documents: list[Document],
-    max_depth: Optional[int],
-) -> dict[str, any]:
+    max_depth: int | None,
+) -> dict[str, Any]:
     """Build a TOC node for a category.
 
     Args:
@@ -384,11 +382,13 @@ def _build_toc_node(
         for doc_uri in category.child_documents:
             doc = next((d for d in documents if d.uri == doc_uri), None)
             if doc:
-                node["children"].append({
-                    "type": "document",
-                    "uri": doc.uri,
-                    "name": doc.title,
-                    "tags": doc.tags,
-                })
+                node["children"].append(
+                    {
+                        "type": "document",
+                        "uri": doc.uri,
+                        "name": doc.title,
+                        "tags": doc.tags,
+                    }
+                )
 
     return node

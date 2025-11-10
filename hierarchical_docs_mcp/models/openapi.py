@@ -1,7 +1,7 @@
 """OpenAPI specification data models."""
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -13,11 +13,11 @@ class APIOperation(BaseModel):
     method: str
     path: str
     uri: str
-    tag: Optional[str] = None
+    tag: str | None = None
     summary: str
     description: str = ""
     parameters: list[dict[str, Any]] = Field(default_factory=list)
-    request_body: Optional[dict[str, Any]] = None
+    request_body: dict[str, Any] | None = None
     responses: dict[str, dict[str, Any]] = Field(default_factory=dict)
     deprecated: bool = False
 

@@ -3,7 +3,7 @@
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -188,8 +188,8 @@ def scan_markdown_files(
     source_path: Path,
     doc_root: Path,
     recursive: bool = True,
-    include_patterns: Optional[list[str]] = None,
-    exclude_patterns: Optional[list[str]] = None,
+    include_patterns: list[str] | None = None,
+    exclude_patterns: list[str] | None = None,
     allow_hidden: bool = False,
 ) -> list[Document]:
     """Scan directory for markdown files and parse them.
@@ -222,12 +222,11 @@ def scan_markdown_files(
 
     # Scan for markdown files
     try:
+        paths: list[Path] = []
         if recursive:
-            paths = []
             for pattern in include_patterns:
                 paths.extend(validated_path.rglob(pattern))
         else:
-            paths = []
             for pattern in include_patterns:
                 paths.extend(validated_path.glob(pattern))
 
@@ -247,9 +246,7 @@ def scan_markdown_files(
             if not should_exclude:
                 filtered_paths.append(path)
 
-        logger.info(
-            f"Found {len(filtered_paths)} markdown files in {validated_path}"
-        )
+        logger.info(f"Found {len(filtered_paths)} markdown files in {validated_path}")
 
         # Parse each file
         for file_path in filtered_paths:

@@ -1,6 +1,7 @@
 """Query and content sanitization to prevent injection attacks."""
 
 import re
+
 from hierarchical_docs_mcp.utils.logger import audit_log, logger
 
 
@@ -55,9 +56,7 @@ def sanitize_query(query: str, allow_regex: bool = False) -> str:
                 "max_length": MAX_QUERY_LENGTH,
             },
         )
-        raise SanitizationError(
-            f"Query exceeds maximum length of {MAX_QUERY_LENGTH} characters"
-        )
+        raise SanitizationError(f"Query exceeds maximum length of {MAX_QUERY_LENGTH} characters")
 
     # Check for suspicious patterns
     for pattern in SUSPICIOUS_PATTERNS:
@@ -71,9 +70,7 @@ def sanitize_query(query: str, allow_regex: bool = False) -> str:
                     "query": query[:100],  # Log first 100 chars only
                 },
             )
-            raise SanitizationError(
-                f"Query contains suspicious pattern: {pattern}"
-            )
+            raise SanitizationError(f"Query contains suspicious pattern: {pattern}")
 
     # Escape regex special characters if regex not allowed
     if not allow_regex:
@@ -128,9 +125,7 @@ def sanitize_openapi_description(description: str) -> str:
                     "description": description[:100],
                 },
             )
-            logger.warning(
-                f"Potential prompt injection detected in OpenAPI description: {pattern}"
-            )
+            logger.warning(f"Potential prompt injection detected in OpenAPI description: {pattern}")
             # Replace suspicious content with placeholder
             description = re.sub(
                 pattern,
@@ -141,9 +136,7 @@ def sanitize_openapi_description(description: str) -> str:
 
     # Remove excessive newlines and control characters
     description = re.sub(r"\n{3,}", "\n\n", description)
-    description = "".join(
-        char for char in description if ord(char) >= 32 or char in "\n\t"
-    )
+    description = "".join(char for char in description if ord(char) >= 32 or char in "\n\t")
 
     return description.strip()
 
@@ -173,9 +166,7 @@ def sanitize_filename(filename: str) -> str:
                 "filename": filename,
             },
         )
-        raise SanitizationError(
-            "Filename contains invalid characters (path traversal attempt)"
-        )
+        raise SanitizationError("Filename contains invalid characters (path traversal attempt)")
 
     # Remove/replace potentially problematic characters
     # Keep alphanumeric, dots, dashes, underscores
@@ -210,9 +201,7 @@ def sanitize_uri(uri: str) -> str:
     # Check for valid URI schemes
     valid_schemes = ["docs://", "api://"]
     if not any(uri.startswith(scheme) for scheme in valid_schemes):
-        raise SanitizationError(
-            f"Invalid URI scheme. Must start with: {', '.join(valid_schemes)}"
-        )
+        raise SanitizationError(f"Invalid URI scheme. Must start with: {', '.join(valid_schemes)}")
 
     # Remove query parameters and fragments that could be injection vectors
     uri = uri.split("?")[0].split("#")[0]

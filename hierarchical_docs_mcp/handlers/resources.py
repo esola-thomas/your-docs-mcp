@@ -95,30 +95,36 @@ async def list_resources(
     resources = []
 
     # Add root
-    resources.append({
-        "uri": "docs://",
-        "name": "Documentation Root",
-        "mimeType": "text/markdown",
-        "description": "Root of documentation hierarchy",
-    })
+    resources.append(
+        {
+            "uri": "docs://",
+            "name": "Documentation Root",
+            "mimeType": "text/markdown",
+            "description": "Root of documentation hierarchy",
+        }
+    )
 
     # Add categories
     for category in categories.values():
-        resources.append({
-            "uri": category.uri,
-            "name": category.label,
-            "mimeType": "text/markdown",
-            "description": f"Category with {category.document_count} documents",
-        })
+        resources.append(
+            {
+                "uri": category.uri,
+                "name": category.label,
+                "mimeType": "text/markdown",
+                "description": f"Category with {category.document_count} documents",
+            }
+        )
 
     # Add documents
     for doc in documents:
-        resources.append({
-            "uri": doc.uri,
-            "name": doc.title,
-            "mimeType": "text/markdown",
-            "description": doc.excerpt(100),
-        })
+        resources.append(
+            {
+                "uri": doc.uri,
+                "name": doc.title,
+                "mimeType": "text/markdown",
+                "description": doc.excerpt(100),
+            }
+        )
 
     logger.info(f"Listed {len(resources)} resources")
     return resources

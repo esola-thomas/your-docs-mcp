@@ -1,9 +1,7 @@
 """Unit tests for caching layer with TTL and file change detection."""
 
-import pytest
-from datetime import datetime, timedelta
-from pathlib import Path
 import time
+from datetime import datetime, timedelta
 
 from hierarchical_docs_mcp.services.cache import Cache, CacheEntry, get_cache
 

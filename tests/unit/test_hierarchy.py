@@ -1,23 +1,23 @@
 """Unit tests for hierarchical navigation and category tree building."""
 
-import pytest
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
+import pytest
+
+from hierarchical_docs_mcp.models.document import Document
+from hierarchical_docs_mcp.models.navigation import Category
 from hierarchical_docs_mcp.services.hierarchy import (
-    build_category_tree,
-    get_breadcrumbs,
-    navigate_to_uri,
-    get_table_of_contents,
+    HierarchyError,
     _count_documents_recursive,
-    _get_root_context,
     _get_category_context,
     _get_document_context,
-    _build_toc_node,
-    HierarchyError,
+    _get_root_context,
+    build_category_tree,
+    get_breadcrumbs,
+    get_table_of_contents,
+    navigate_to_uri,
 )
-from hierarchical_docs_mcp.models.document import Document
-from hierarchical_docs_mcp.models.navigation import Category, NavigationContext
 
 
 @pytest.fixture
@@ -294,9 +294,7 @@ class TestNavigateToUri:
     def test_navigate_to_document(self, sample_documents):
         """Test navigating to a document."""
         categories = build_category_tree(sample_documents)
-        context = navigate_to_uri(
-            "docs://guides/getting-started", sample_documents, categories
-        )
+        context = navigate_to_uri("docs://guides/getting-started", sample_documents, categories)
 
         assert context.current_type == "document"
         assert context.current_uri == "docs://guides/getting-started"
@@ -338,9 +336,7 @@ class TestNavigateToUri:
     def test_navigation_options_at_document(self, sample_documents):
         """Test navigation options at document."""
         categories = build_category_tree(sample_documents)
-        context = navigate_to_uri(
-            "docs://guides/getting-started", sample_documents, categories
-        )
+        context = navigate_to_uri("docs://guides/getting-started", sample_documents, categories)
 
         assert "up" in context.navigation_options
         assert "down" not in context.navigation_options
@@ -364,9 +360,7 @@ class TestGetTableOfContents:
         toc = get_table_of_contents(categories, sample_documents)
 
         # Find guides category in children
-        guides_child = next(
-            (c for c in toc["children"] if c["uri"] == "docs://guides"), None
-        )
+        guides_child = next((c for c in toc["children"] if c["uri"] == "docs://guides"), None)
 
         assert guides_child is not None
         assert guides_child["type"] == "category"
@@ -378,9 +372,7 @@ class TestGetTableOfContents:
         toc = get_table_of_contents(categories, sample_documents)
 
         # Find guides category
-        guides = next(
-            (c for c in toc["children"] if c["uri"] == "docs://guides"), None
-        )
+        guides = next((c for c in toc["children"] if c["uri"] == "docs://guides"), None)
 
         assert guides is not None
         # Should have advanced as child category
@@ -394,22 +386,17 @@ class TestGetTableOfContents:
         """Test that TOC includes documents."""
         # Clear cache to avoid pollution from other tests
         from hierarchical_docs_mcp.services.cache import get_cache
+
         get_cache().clear()
 
         categories = build_category_tree(sample_documents)
         toc = get_table_of_contents(categories, sample_documents)
 
-        guides = next(
-            (c for c in toc["children"] if c["uri"] == "docs://guides"), None
-        )
+        guides = next((c for c in toc["children"] if c["uri"] == "docs://guides"), None)
 
         # Should have getting-started document
         doc = next(
-            (
-                c
-                for c in guides["children"]
-                if c["uri"] == "docs://guides/getting-started"
-            ),
+            (c for c in guides["children"] if c["uri"] == "docs://guides/getting-started"),
             None,
         )
         assert doc is not None
@@ -422,9 +409,7 @@ class TestGetTableOfContents:
         toc = get_table_of_contents(categories, sample_documents, max_depth=1)
 
         # Should only include root level categories, not nested
-        guides = next(
-            (c for c in toc["children"] if c["uri"] == "docs://guides"), None
-        )
+        guides = next((c for c in toc["children"] if c["uri"] == "docs://guides"), None)
 
         if guides:
             # Should not have nested children at depth 1

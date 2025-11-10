@@ -1,8 +1,8 @@
 """Unit tests for CLI entry point."""
 
+from unittest.mock import patch
+
 import pytest
-from pathlib import Path
-from unittest.mock import AsyncMock, patch
 
 from hierarchical_docs_mcp.__main__ import main
 from hierarchical_docs_mcp.config import ServerConfig
@@ -53,7 +53,9 @@ class TestMain:
 
         with patch("hierarchical_docs_mcp.__main__.load_config", return_value=mock_config):
             with patch("hierarchical_docs_mcp.__main__.setup_logging"):
-                with patch("hierarchical_docs_mcp.__main__.asyncio.run", side_effect=KeyboardInterrupt):
+                with patch(
+                    "hierarchical_docs_mcp.__main__.asyncio.run", side_effect=KeyboardInterrupt
+                ):
                     with pytest.raises(SystemExit) as exc_info:
                         main()
 
@@ -71,7 +73,10 @@ class TestMain:
 
         with patch("hierarchical_docs_mcp.__main__.load_config", return_value=mock_config):
             with patch("hierarchical_docs_mcp.__main__.setup_logging"):
-                with patch("hierarchical_docs_mcp.__main__.asyncio.run", side_effect=Exception("Test error")):
+                with patch(
+                    "hierarchical_docs_mcp.__main__.asyncio.run",
+                    side_effect=Exception("Test error"),
+                ):
                     with pytest.raises(SystemExit) as exc_info:
                         main()
 
@@ -104,7 +109,9 @@ class TestMain:
 
         mock_config = ServerConfig(docs_root=str(docs_dir))
 
-        with patch("hierarchical_docs_mcp.__main__.load_config", return_value=mock_config) as mock_load:
+        with patch(
+            "hierarchical_docs_mcp.__main__.load_config", return_value=mock_config
+        ) as mock_load:
             with patch("hierarchical_docs_mcp.__main__.setup_logging"):
                 with patch("hierarchical_docs_mcp.__main__.asyncio.run"):
                     try:
@@ -117,7 +124,9 @@ class TestMain:
     def test_main_validation_error_message(self, capsys):
         """Test that validation error messages are displayed."""
         # Mock load_config to raise ValueError
-        with patch("hierarchical_docs_mcp.__main__.load_config", side_effect=ValueError("Invalid path")):
+        with patch(
+            "hierarchical_docs_mcp.__main__.load_config", side_effect=ValueError("Invalid path")
+        ):
             with pytest.raises(SystemExit) as exc_info:
                 main()
 

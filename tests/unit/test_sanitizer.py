@@ -1,15 +1,14 @@
 """Unit tests for input sanitization to prevent injection attacks."""
 
 import pytest
-import re
 
 from hierarchical_docs_mcp.security.sanitizer import (
-    sanitize_query,
-    sanitize_openapi_description,
-    sanitize_filename,
-    sanitize_uri,
-    SanitizationError,
     MAX_QUERY_LENGTH,
+    SanitizationError,
+    sanitize_filename,
+    sanitize_openapi_description,
+    sanitize_query,
+    sanitize_uri,
 )
 
 

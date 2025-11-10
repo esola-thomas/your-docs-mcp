@@ -1,16 +1,16 @@
 """Unit tests for path validation security."""
 
-import pytest
-from pathlib import Path
-import tempfile
 import os
+from pathlib import Path
+
+import pytest
 
 from hierarchical_docs_mcp.security.path_validator import (
+    PathValidationError,
+    detect_symlink_cycle,
+    is_path_safe,
     validate_path,
     validate_relative_path,
-    is_path_safe,
-    detect_symlink_cycle,
-    PathValidationError,
 )
 
 
@@ -176,14 +176,14 @@ class TestIsPathSafe:
 class TestDetectSymlinkCycle:
     """Test symlink cycle detection."""
 
-    @pytest.mark.skipif(os.name == 'nt', reason="Symlinks require admin on Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Symlinks require admin on Windows")
     def test_no_symlink_returns_none(self, temp_doc_root):
         """Test that regular files return None."""
         test_file = temp_doc_root / "guides" / "test.md"
         result = detect_symlink_cycle(test_file)
         assert result is None
 
-    @pytest.mark.skipif(os.name == 'nt', reason="Symlinks require admin on Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Symlinks require admin on Windows")
     def test_circular_symlink_detected(self, tmp_path):
         """Test that circular symlinks are detected."""
         # Create circular symlink
@@ -196,7 +196,7 @@ class TestDetectSymlinkCycle:
         result = detect_symlink_cycle(link1)
         assert result is not None
 
-    @pytest.mark.skipif(os.name == 'nt', reason="Symlinks require admin on Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Symlinks require admin on Windows")
     def test_deep_symlink_chain_detected(self, tmp_path):
         """Test that excessively deep symlink chains are detected."""
         # Create a very long chain

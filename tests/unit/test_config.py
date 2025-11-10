@@ -1,8 +1,8 @@
 """Unit tests for configuration management."""
 
-import os
-import pytest
 from pathlib import Path
+
+import pytest
 from pydantic import ValidationError
 
 from hierarchical_docs_mcp.config import ServerConfig, SourceConfig, load_config
@@ -170,9 +170,7 @@ class TestServerConfig:
         spec1.write_text("openapi: 3.0.0")
         spec2.write_text("openapi: 3.0.0")
 
-        config = ServerConfig(
-            openapi_specs=f"{spec1},{spec2}"
-        )
+        config = ServerConfig(openapi_specs=f"{spec1},{spec2}")
 
         assert len(config.openapi_specs) == 2
         assert spec1.resolve() in config.openapi_specs

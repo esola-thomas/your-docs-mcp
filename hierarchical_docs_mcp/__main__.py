@@ -20,7 +20,10 @@ def main() -> None:
         # Validate configuration
         if not config.sources and not config.docs_root:
             print("Error: No documentation sources configured.", file=sys.stderr)
-            print("Please set DOCS_ROOT environment variable or provide a config file.", file=sys.stderr)
+            print(
+                "Please set DOCS_ROOT environment variable or provide a config file.",
+                file=sys.stderr,
+            )
             sys.exit(1)
 
         # Run server

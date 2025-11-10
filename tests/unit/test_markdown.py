@@ -1,18 +1,19 @@
 """Unit tests for markdown parsing with YAML frontmatter."""
 
-import pytest
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
+import pytest
+
+from hierarchical_docs_mcp.models.document import Document
 from hierarchical_docs_mcp.services.markdown import (
-    parse_markdown_with_metadata,
-    scan_markdown_files,
+    MarkdownParseError,
     _extract_frontmatter,
     _extract_title,
     _generate_uri,
-    MarkdownParseError,
+    parse_markdown_with_metadata,
+    scan_markdown_files,
 )
-from hierarchical_docs_mcp.models.document import Document
 
 
 @pytest.fixture

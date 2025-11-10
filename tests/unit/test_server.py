@@ -1,12 +1,10 @@
 """Unit tests for MCP server implementation."""
 
-import pytest
-from datetime import datetime
-from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
+import pytest
+
 from hierarchical_docs_mcp.config import ServerConfig
-from hierarchical_docs_mcp.models.document import Document
 from hierarchical_docs_mcp.server import DocumentationMCPServer, serve
 
 
@@ -153,7 +151,9 @@ class TestServeFunction:
 
         # Mock the server's run method to avoid actually starting it
         with patch.object(DocumentationMCPServer, "run", new_callable=AsyncMock):
-            with patch.object(DocumentationMCPServer, "initialize", new_callable=AsyncMock) as mock_init:
+            with patch.object(
+                DocumentationMCPServer, "initialize", new_callable=AsyncMock
+            ) as mock_init:
                 await serve(config)
 
                 # Verify initialize was called

@@ -1,6 +1,6 @@
 """Navigation and search data models."""
 
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -11,7 +11,7 @@ class Category(BaseModel):
     name: str
     label: str
     uri: str
-    parent_uri: Optional[str] = None
+    parent_uri: str | None = None
     depth: int
     child_categories: list[str] = Field(default_factory=list)
     child_documents: list[str] = Field(default_factory=list)
@@ -30,7 +30,7 @@ class Category(BaseModel):
 
         parts = path.split("/")
         return [
-            {"name": part, "uri": f"docs://{'/'.join(parts[:i+1])}"}
+            {"name": part, "uri": f"docs://{'/'.join(parts[: i + 1])}"}
             for i, part in enumerate(parts)
         ]
 
@@ -63,7 +63,7 @@ class NavigationContext(BaseModel):
 
     current_uri: str
     current_type: Literal["root", "category", "document"]
-    parent_uri: Optional[str] = None
+    parent_uri: str | None = None
     breadcrumbs: list[dict[str, str]] = Field(default_factory=list)
     children: list[dict[str, Any]] = Field(default_factory=list)
     sibling_count: int = 0

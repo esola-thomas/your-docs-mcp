@@ -1,15 +1,16 @@
 """Contract tests for MCP tool handlers."""
 
-import pytest
 from datetime import datetime
 from pathlib import Path
 
+import pytest
+
 from hierarchical_docs_mcp.handlers.tools import (
-    handle_search_documentation,
-    handle_navigate_to,
-    handle_get_table_of_contents,
-    handle_search_by_tags,
     handle_get_document,
+    handle_get_table_of_contents,
+    handle_navigate_to,
+    handle_search_by_tags,
+    handle_search_documentation,
 )
 from hierarchical_docs_mcp.models.document import Document
 from hierarchical_docs_mcp.services.hierarchy import build_category_tree
@@ -217,9 +218,7 @@ class TestNavigateToTool:
         assert "error" in result
 
     @pytest.mark.asyncio
-    async def test_navigate_result_has_navigation_options(
-        self, sample_documents, categories
-    ):
+    async def test_navigate_result_has_navigation_options(self, sample_documents, categories):
         """Test that navigation result includes navigation options."""
         arguments = {"uri": "docs://guides"}
 
@@ -262,9 +261,7 @@ class TestGetTableOfContentsTool:
         """Test that TOC has correct basic structure."""
         arguments = {}
 
-        result = await handle_get_table_of_contents(
-            arguments, sample_documents, categories
-        )
+        result = await handle_get_table_of_contents(arguments, sample_documents, categories)
 
         assert "type" in result
         assert result["type"] == "root"
@@ -277,9 +274,7 @@ class TestGetTableOfContentsTool:
         """Test that TOC includes categories."""
         arguments = {}
 
-        result = await handle_get_table_of_contents(
-            arguments, sample_documents, categories
-        )
+        result = await handle_get_table_of_contents(arguments, sample_documents, categories)
 
         # Should have at least guides and api categories
         assert len(result["children"]) > 0
@@ -296,9 +291,7 @@ class TestGetTableOfContentsTool:
         """Test TOC generation with max_depth parameter."""
         arguments = {"max_depth": 1}
 
-        result = await handle_get_table_of_contents(
-            arguments, sample_documents, categories
-        )
+        result = await handle_get_table_of_contents(arguments, sample_documents, categories)
 
         # Should still return valid structure
         assert "type" in result
@@ -309,9 +302,7 @@ class TestGetTableOfContentsTool:
         """Test that TOC includes nested structure."""
         arguments = {}
 
-        result = await handle_get_table_of_contents(
-            arguments, sample_documents, categories
-        )
+        result = await handle_get_table_of_contents(arguments, sample_documents, categories)
 
         # Look for nested children
         for child in result["children"]:
@@ -327,9 +318,7 @@ class TestSearchByTagsTool:
         """Test searching by a single tag."""
         arguments = {"tags": ["authentication"], "limit": 10}
 
-        results = await handle_search_by_tags(
-            arguments, sample_documents, search_limit=10
-        )
+        results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
 
         assert isinstance(results, list)
         # Should find documents with authentication tag
@@ -346,9 +335,7 @@ class TestSearchByTagsTool:
         """Test searching by multiple tags."""
         arguments = {"tags": ["advanced", "performance"], "limit": 10}
 
-        results = await handle_search_by_tags(
-            arguments, sample_documents, search_limit=10
-        )
+        results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
 
         assert isinstance(results, list)
 
@@ -357,9 +344,7 @@ class TestSearchByTagsTool:
         """Test that tag search respects limit."""
         arguments = {"tags": ["tutorial"], "limit": 1}
 
-        results = await handle_search_by_tags(
-            arguments, sample_documents, search_limit=10
-        )
+        results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
 
         assert len(results) <= 1
 
@@ -368,22 +353,16 @@ class TestSearchByTagsTool:
         """Test searching for nonexistent tag."""
         arguments = {"tags": ["nonexistent_tag"], "limit": 10}
 
-        results = await handle_search_by_tags(
-            arguments, sample_documents, search_limit=10
-        )
+        results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
 
         assert len(results) == 0
 
     @pytest.mark.asyncio
-    async def test_search_by_tags_with_category_filter(
-        self, sample_documents, categories
-    ):
+    async def test_search_by_tags_with_category_filter(self, sample_documents, categories):
         """Test tag search with category filter."""
         arguments = {"tags": ["authentication"], "category": "guides", "limit": 10}
 
-        results = await handle_search_by_tags(
-            arguments, sample_documents, search_limit=10
-        )
+        results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
 
         # Results should be filtered by category
         for result in results:
@@ -455,9 +434,7 @@ class TestToolContractCompliance:
             handle_navigate_to({"uri": "docs://"}, sample_documents, categories),
             handle_get_table_of_contents({}, sample_documents, categories),
             handle_search_by_tags({"tags": ["test"], "limit": 10}, sample_documents, 10),
-            handle_get_document(
-                {"uri": "docs://guides/getting-started"}, sample_documents
-            ),
+            handle_get_document({"uri": "docs://guides/getting-started"}, sample_documents),
         ]
 
         for tool_result in tools:
@@ -472,9 +449,7 @@ class TestToolContractCompliance:
     async def test_tools_handle_missing_arguments(self, sample_documents, categories):
         """Test that tools handle missing arguments gracefully."""
         # Search without query
-        result1 = await handle_search_documentation(
-            {}, sample_documents, categories, 10
-        )
+        result1 = await handle_search_documentation({}, sample_documents, categories, 10)
         assert isinstance(result1, list)
 
         # Navigate without URI
@@ -495,9 +470,7 @@ class TestToolContractCompliance:
         assert isinstance(result1, list)
 
         # Navigate with invalid URI type
-        result2 = await handle_navigate_to(
-            {"uri": None}, sample_documents, categories
-        )
+        result2 = await handle_navigate_to({"uri": None}, sample_documents, categories)
         assert isinstance(result2, dict)
 
 
@@ -509,9 +482,7 @@ class TestToolResponseFormats:
         """Test that search results have all expected fields."""
         arguments = {"query": "authentication", "limit": 10}
 
-        results = await handle_search_documentation(
-            arguments, sample_documents, categories, 10
-        )
+        results = await handle_search_documentation(arguments, sample_documents, categories, 10)
 
         required_fields = ["uri", "title", "excerpt", "breadcrumbs", "relevance"]
 

@@ -1,7 +1,7 @@
 """Search functionality for documentation."""
 
 import re
-from typing import Literal, Optional
+from typing import Literal
 
 from hierarchical_docs_mcp.models.document import Document
 from hierarchical_docs_mcp.models.navigation import Category, SearchResult
@@ -22,7 +22,7 @@ def search_content(
     documents: list[Document],
     categories: dict[str, Category],
     limit: int = 10,
-    category_filter: Optional[str] = None,
+    category_filter: str | None = None,
 ) -> list[SearchResult]:
     """Search documentation content with full-text search.
 
@@ -90,11 +90,7 @@ def search_content(
                 metadata_score = 0.5
 
             # Calculate total relevance
-            relevance = (
-                title_score * 0.5 +
-                content_score * 0.3 +
-                metadata_score * 0.2
-            )
+            relevance = title_score * 0.5 + content_score * 0.3 + metadata_score * 0.2
 
             if relevance > 0:
                 # Determine match type
@@ -147,9 +143,9 @@ def search_content(
 
 
 def search_by_metadata(
-    tags: Optional[list[str]] = None,
-    category: Optional[str] = None,
-    documents: list[Document] = None,
+    tags: list[str] | None = None,
+    category: str | None = None,
+    documents: list[Document] | None = None,
     limit: int = 10,
 ) -> list[SearchResult]:
     """Search documentation by metadata (tags, category).
@@ -163,7 +159,10 @@ def search_by_metadata(
     Returns:
         List of SearchResult objects
     """
-    results = []
+    results: list[SearchResult] = []
+
+    if documents is None:
+        return results
 
     for doc in documents:
         # Use AND logic: document must match ALL specified filters
@@ -192,8 +191,7 @@ def search_by_metadata(
     results = results[:limit]
 
     logger.info(
-        f"Metadata search found {len(results)} results "
-        f"(tags: {tags}, category: {category})"
+        f"Metadata search found {len(results)} results (tags: {tags}, category: {category})"
     )
 
     return results
@@ -217,7 +215,7 @@ def _extract_excerpt(content: str, query: str, context_chars: int = 100) -> str:
 
         if not match:
             # Return first N characters if no match
-            return content[:context_chars * 2] + "..."
+            return content[: context_chars * 2] + "..."
 
         # Extract context around match
         start = max(0, match.start() - context_chars)
@@ -235,7 +233,7 @@ def _extract_excerpt(content: str, query: str, context_chars: int = 100) -> str:
 
     except Exception as e:
         logger.warning(f"Failed to extract excerpt: {e}")
-        return content[:context_chars * 2] + "..."
+        return content[: context_chars * 2] + "..."
 
 
 def _highlight_matches(text: str, query: str, highlight: str = "**") -> str:

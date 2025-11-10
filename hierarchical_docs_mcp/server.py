@@ -99,9 +99,7 @@ class DocumentationMCPServer:
                 ),
                 Tool(
                     name="search_by_tags",
-                    description=(
-                        "Search documentation by metadata tags and category."
-                    ),
+                    description=("Search documentation by metadata tags and category."),
                     inputSchema={
                         "type": "object",
                         "properties": {
@@ -151,9 +149,7 @@ class DocumentationMCPServer:
                 return [{"type": "text", "text": str(results)}]
 
             elif name == "navigate_to":
-                result = await tools.handle_navigate_to(
-                    arguments, self.documents, self.categories
-                )
+                result = await tools.handle_navigate_to(arguments, self.documents, self.categories)
                 return [{"type": "text", "text": str(result)}]
 
             elif name == "get_table_of_contents":
@@ -178,9 +174,7 @@ class DocumentationMCPServer:
         @self.server.list_resources()
         async def list_resources() -> list[Resource]:
             """List available resources."""
-            resource_list = await resources.list_resources(
-                self.documents, self.categories
-            )
+            resource_list = await resources.list_resources(self.documents, self.categories)
             return [
                 Resource(
                     uri=r["uri"],
@@ -194,9 +188,7 @@ class DocumentationMCPServer:
         @self.server.read_resource()
         async def read_resource(uri: str) -> str:
             """Read a resource by URI."""
-            result = await resources.handle_resource_read(
-                uri, self.documents, self.categories
-            )
+            result = await resources.handle_resource_read(uri, self.documents, self.categories)
 
             if "error" in result:
                 raise ValueError(result["error"])

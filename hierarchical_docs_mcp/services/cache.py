@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -16,7 +16,7 @@ class CacheEntry(BaseModel):
     value: Any
     cached_at: datetime
     ttl: int
-    file_mtime: Optional[datetime] = None
+    file_mtime: datetime | None = None
     size_bytes: int = 0
 
     @property
@@ -24,7 +24,7 @@ class CacheEntry(BaseModel):
         """Check if entry has exceeded TTL."""
         return (datetime.utcnow() - self.cached_at).total_seconds() > self.ttl
 
-    def is_stale(self, current_mtime: Optional[datetime] = None) -> bool:
+    def is_stale(self, current_mtime: datetime | None = None) -> bool:
         """Check if source file has been modified.
 
         Args:
@@ -53,7 +53,7 @@ class Cache:
         self._max_size_bytes = max_size_mb * 1024 * 1024
         self._current_size_bytes = 0
 
-    def get(self, key: str, file_path: Optional[Path] = None) -> Optional[Any]:
+    def get(self, key: str, file_path: Path | None = None) -> Any | None:
         """Get value from cache if valid.
 
         Args:
@@ -89,8 +89,8 @@ class Cache:
         self,
         key: str,
         value: Any,
-        ttl: Optional[int] = None,
-        file_path: Optional[Path] = None,
+        ttl: int | None = None,
+        file_path: Path | None = None,
     ) -> None:
         """Set value in cache.
 
@@ -104,10 +104,7 @@ class Cache:
         size_bytes = self._estimate_size(value)
 
         # Check if we need to evict entries
-        while (
-            self._current_size_bytes + size_bytes > self._max_size_bytes
-            and self._cache
-        ):
+        while self._current_size_bytes + size_bytes > self._max_size_bytes and self._cache:
             self._evict_oldest()
 
         # Get file modification time if path provided
@@ -219,7 +216,7 @@ class Cache:
 
 
 # Global cache instance
-_cache_instance: Optional[Cache] = None
+_cache_instance: Cache | None = None
 
 
 def get_cache(ttl: int = 3600, max_size_mb: int = 500) -> Cache:

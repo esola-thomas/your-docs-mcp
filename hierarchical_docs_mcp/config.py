@@ -1,7 +1,7 @@
 """Configuration management using pydantic-settings."""
 
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,9 +15,7 @@ class SourceConfig(BaseSettings):
     label: str
     recursive: bool = True
     include_patterns: list[str] = Field(default_factory=lambda: ["*.md", "*.mdx"])
-    exclude_patterns: list[str] = Field(
-        default_factory=lambda: ["node_modules", ".git", "_*"]
-    )
+    exclude_patterns: list[str] = Field(default_factory=lambda: ["node_modules", ".git", "_*"])
     format_type: Literal["markdown", "openapi"] = "markdown"
 
     @field_validator("path")
@@ -43,13 +41,13 @@ class ServerConfig(BaseSettings):
     )
 
     # Documentation root (single source mode)
-    docs_root: Optional[Path] = Field(
+    docs_root: Path | None = Field(
         None,
         validation_alias=AliasChoices("docs_root", "DOCS_ROOT", "MCP_DOCS_DOCS_ROOT"),
     )
 
     # Multi-source configuration file
-    config_file: Optional[Path] = None
+    config_file: Path | None = None
 
     # OpenAPI specification files
     openapi_specs: list[Path] = Field(default_factory=list)
@@ -76,7 +74,7 @@ class ServerConfig(BaseSettings):
 
     @field_validator("docs_root")
     @classmethod
-    def validate_docs_root(cls, v: Optional[Path]) -> Optional[Path]:
+    def validate_docs_root(cls, v: Path | None) -> Path | None:
         """Validate and resolve documentation root path."""
         if v is None:
             return None
@@ -100,7 +98,7 @@ class ServerConfig(BaseSettings):
 
     @field_validator("config_file")
     @classmethod
-    def validate_config_file(cls, v: Optional[Path]) -> Optional[Path]:
+    def validate_config_file(cls, v: Path | None) -> Path | None:
         """Validate configuration file path."""
         if v is None:
             return None
