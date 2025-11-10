@@ -1,6 +1,6 @@
 """Unit tests for CLI entry point."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -35,14 +35,14 @@ class TestMain:
         # Mock functions to avoid actually starting the server
         with patch("hierarchical_docs_mcp.__main__.load_config", return_value=mock_config):
             with patch("hierarchical_docs_mcp.__main__.setup_logging"):
-                with patch("hierarchical_docs_mcp.__main__.asyncio.run") as mock_run:
+                with patch("hierarchical_docs_mcp.__main__.serve", new_callable=AsyncMock) as mock_serve:
                     try:
                         main()
                     except SystemExit:
                         pass
 
-                    # Verify asyncio.run was called (server was started)
-                    assert mock_run.call_count > 0
+                    # Verify serve was called (server was started)
+                    assert mock_serve.call_count > 0
 
     def test_main_handles_keyboard_interrupt(self, tmp_path, capsys):
         """Test that main handles KeyboardInterrupt gracefully."""
@@ -51,11 +51,12 @@ class TestMain:
 
         mock_config = ServerConfig(docs_root=str(docs_dir))
 
+        # Mock serve to raise KeyboardInterrupt
+        mock_serve = AsyncMock(side_effect=KeyboardInterrupt)
+
         with patch("hierarchical_docs_mcp.__main__.load_config", return_value=mock_config):
             with patch("hierarchical_docs_mcp.__main__.setup_logging"):
-                with patch(
-                    "hierarchical_docs_mcp.__main__.asyncio.run", side_effect=KeyboardInterrupt
-                ):
+                with patch("hierarchical_docs_mcp.__main__.serve", mock_serve):
                     with pytest.raises(SystemExit) as exc_info:
                         main()
 
@@ -71,12 +72,12 @@ class TestMain:
 
         mock_config = ServerConfig(docs_root=str(docs_dir))
 
+        # Mock serve to raise general exception
+        mock_serve = AsyncMock(side_effect=Exception("Test error"))
+
         with patch("hierarchical_docs_mcp.__main__.load_config", return_value=mock_config):
             with patch("hierarchical_docs_mcp.__main__.setup_logging"):
-                with patch(
-                    "hierarchical_docs_mcp.__main__.asyncio.run",
-                    side_effect=Exception("Test error"),
-                ):
+                with patch("hierarchical_docs_mcp.__main__.serve", mock_serve):
                     with pytest.raises(SystemExit) as exc_info:
                         main()
 
@@ -94,7 +95,7 @@ class TestMain:
 
         with patch("hierarchical_docs_mcp.__main__.load_config", return_value=mock_config):
             with patch("hierarchical_docs_mcp.__main__.setup_logging") as mock_setup:
-                with patch("hierarchical_docs_mcp.__main__.asyncio.run"):
+                with patch("hierarchical_docs_mcp.__main__.serve", new_callable=AsyncMock):
                     try:
                         main()
                     except SystemExit:
@@ -113,7 +114,7 @@ class TestMain:
             "hierarchical_docs_mcp.__main__.load_config", return_value=mock_config
         ) as mock_load:
             with patch("hierarchical_docs_mcp.__main__.setup_logging"):
-                with patch("hierarchical_docs_mcp.__main__.asyncio.run"):
+                with patch("hierarchical_docs_mcp.__main__.serve", new_callable=AsyncMock):
                     try:
                         main()
                     except SystemExit:

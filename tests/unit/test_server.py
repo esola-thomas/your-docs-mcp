@@ -1,10 +1,13 @@
 """Unit tests for MCP server implementation."""
 
-from unittest.mock import AsyncMock, patch
+from datetime import datetime, timezone
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from hierarchical_docs_mcp.config import ServerConfig
+from hierarchical_docs_mcp.models.document import Document
+from hierarchical_docs_mcp.models.navigation import Category
 from hierarchical_docs_mcp.server import DocumentationMCPServer, serve
 
 
@@ -174,3 +177,165 @@ class TestServeFunction:
 
                 # Verify run was called
                 mock_run.assert_called_once()
+
+
+class TestServerHandlers:
+    """Test server handler registration and functionality."""
+
+    @pytest.fixture
+    def server_with_data(self, tmp_path):
+        """Create a server with sample data."""
+        docs_dir = tmp_path / "docs"
+        docs_dir.mkdir()
+
+        config = ServerConfig(docs_root=str(docs_dir))
+        server = DocumentationMCPServer(config)
+
+        # Add sample documents
+        server.documents = [
+            Document(
+                uri="docs://test/doc1",
+                title="Test Doc 1",
+                content="Content 1",
+                category="test",
+                tags=["tag1"],
+                file_path="/test/doc1.md",
+                last_modified=datetime.now(timezone.utc),
+            )
+        ]
+
+        # Add sample categories
+        server.categories = {
+            "docs://test": Category(
+                uri="docs://test",
+                label="Test",
+                child_documents=["docs://test/doc1"],
+                child_categories=[],
+                document_count=1,
+            )
+        }
+
+        return server
+
+    @pytest.mark.asyncio
+    async def test_list_tools_handler(self, server_with_data):
+        """Test that list_tools handler returns all tools."""
+        # Get the list_tools handler
+        handlers = server_with_data.server._list_tools_handlers
+        assert len(handlers) > 0
+
+        # Call the handler
+        tools = await handlers[0]()
+
+        assert len(tools) == 5
+        tool_names = [t.name for t in tools]
+        assert "search_documentation" in tool_names
+        assert "navigate_to" in tool_names
+        assert "get_table_of_contents" in tool_names
+        assert "search_by_tags" in tool_names
+        assert "get_document" in tool_names
+
+    @pytest.mark.asyncio
+    async def test_call_tool_search_documentation(self, server_with_data):
+        """Test call_tool handler for search_documentation."""
+        with patch("hierarchical_docs_mcp.handlers.tools.handle_search_documentation") as mock:
+            mock.return_value = [{"uri": "docs://test", "title": "Test"}]
+
+            handlers = server_with_data.server._call_tool_handlers
+            result = await handlers[0]("search_documentation", {"query": "test"})
+
+            assert len(result) > 0
+            assert result[0]["type"] == "text"
+            mock.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_call_tool_navigate_to(self, server_with_data):
+        """Test call_tool handler for navigate_to."""
+        with patch("hierarchical_docs_mcp.handlers.tools.handle_navigate_to") as mock:
+            mock.return_value = {"current_uri": "docs://test"}
+
+            handlers = server_with_data.server._call_tool_handlers
+            result = await handlers[0]("navigate_to", {"uri": "docs://test"})
+
+            assert len(result) > 0
+            assert result[0]["type"] == "text"
+            mock.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_call_tool_get_table_of_contents(self, server_with_data):
+        """Test call_tool handler for get_table_of_contents."""
+        with patch("hierarchical_docs_mcp.handlers.tools.handle_get_table_of_contents") as mock:
+            mock.return_value = {"root": []}
+
+            handlers = server_with_data.server._call_tool_handlers
+            result = await handlers[0]("get_table_of_contents", {})
+
+            assert len(result) > 0
+            assert result[0]["type"] == "text"
+            mock.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_call_tool_search_by_tags(self, server_with_data):
+        """Test call_tool handler for search_by_tags."""
+        with patch("hierarchical_docs_mcp.handlers.tools.handle_search_by_tags") as mock:
+            mock.return_value = [{"uri": "docs://test"}]
+
+            handlers = server_with_data.server._call_tool_handlers
+            result = await handlers[0]("search_by_tags", {"tags": ["tag1"]})
+
+            assert len(result) > 0
+            assert result[0]["type"] == "text"
+            mock.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_call_tool_get_document(self, server_with_data):
+        """Test call_tool handler for get_document."""
+        with patch("hierarchical_docs_mcp.handlers.tools.handle_get_document") as mock:
+            mock.return_value = {"uri": "docs://test", "content": "Test"}
+
+            handlers = server_with_data.server._call_tool_handlers
+            result = await handlers[0]("get_document", {"uri": "docs://test"})
+
+            assert len(result) > 0
+            assert result[0]["type"] == "text"
+            mock.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_call_tool_unknown_tool(self, server_with_data):
+        """Test call_tool handler raises error for unknown tool."""
+        handlers = server_with_data.server._call_tool_handlers
+
+        with pytest.raises(ValueError, match="Unknown tool"):
+            await handlers[0]("unknown_tool", {})
+
+    @pytest.mark.asyncio
+    async def test_list_resources_handler(self, server_with_data):
+        """Test that list_resources handler works."""
+        handlers = server_with_data.server._list_resources_handlers
+        assert len(handlers) > 0
+
+        resources = await handlers[0]()
+
+        assert len(resources) > 0
+        # Should have at least root + categories + documents
+        assert any(r.uri == "docs://" for r in resources)
+
+    @pytest.mark.asyncio
+    async def test_read_resource_handler(self, server_with_data):
+        """Test that read_resource handler works."""
+        handlers = server_with_data.server._read_resource_handlers
+        assert len(handlers) > 0
+
+        # Read a document
+        content = await handlers[0]("docs://test/doc1")
+
+        assert isinstance(content, str)
+        assert len(content) > 0
+
+    @pytest.mark.asyncio
+    async def test_read_resource_handler_error(self, server_with_data):
+        """Test that read_resource handler raises error for invalid resource."""
+        handlers = server_with_data.server._read_resource_handlers
+
+        with pytest.raises(ValueError):
+            await handlers[0]("docs://nonexistent")
