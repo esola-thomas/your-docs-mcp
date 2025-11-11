@@ -60,14 +60,20 @@ class TestSearchContent:
         """Create sample categories for testing."""
         return {
             "docs://guides": Category(
+                name="guides",
                 uri="docs://guides",
                 label="Guides",
+                depth=0,
+                source_category="guides",
                 child_documents=["docs://guides/getting-started", "docs://guides/advanced"],
                 child_categories=[],
                 document_count=2,),
             "docs://api": Category(
+                name="api",
                 uri="docs://api",
                 label="API",
+                depth=0,
+                source_category="api",
                 child_documents=["docs://api/authentication"],
                 child_categories=[],
                 document_count=1,),
