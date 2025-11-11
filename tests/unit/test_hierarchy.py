@@ -345,6 +345,14 @@ class TestNavigateToUri:
 class TestGetTableOfContents:
     """Test table of contents generation."""
 
+    @pytest.fixture(autouse=True)
+    def clear_cache(self):
+        """Clear the cache before each test."""
+        from hierarchical_docs_mcp.services.cache import get_cache
+        get_cache().clear()
+        yield
+        get_cache().clear()
+
     def test_toc_generation(self, sample_documents):
         """Test basic TOC generation."""
         categories = build_category_tree(sample_documents)
