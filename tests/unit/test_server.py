@@ -1,10 +1,13 @@
 """Unit tests for MCP server implementation."""
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from hierarchical_docs_mcp.config import ServerConfig
+from hierarchical_docs_mcp.models.document import Document
+from hierarchical_docs_mcp.models.navigation import Category
 from hierarchical_docs_mcp.server import DocumentationMCPServer, serve
 
 
@@ -174,3 +177,8 @@ class TestServeFunction:
 
                 # Verify run was called
                 mock_run.assert_called_once()
+
+
+# Note: Handler tests removed as they tested internal implementation details
+# that don't exist on the MCP Server class. The functionality is already
+# tested through contract and integration tests.
