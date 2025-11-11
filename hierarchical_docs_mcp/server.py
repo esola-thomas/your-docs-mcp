@@ -1,5 +1,6 @@
 """Main MCP server implementation."""
 
+import json
 from typing import Any
 
 from mcp.server import Server
@@ -146,27 +147,27 @@ class DocumentationMCPServer:
                 results = await tools.handle_search_documentation(
                     arguments, self.documents, self.categories, self.config.search_limit
                 )
-                return [{"type": "text", "text": str(results)}]
+                return [{"type": "text", "text": json.dumps(results, indent=2)}]
 
             elif name == "navigate_to":
                 result = await tools.handle_navigate_to(arguments, self.documents, self.categories)
-                return [{"type": "text", "text": str(result)}]
+                return [{"type": "text", "text": json.dumps(result, indent=2)}]
 
             elif name == "get_table_of_contents":
                 result = await tools.handle_get_table_of_contents(
                     arguments, self.documents, self.categories
                 )
-                return [{"type": "text", "text": str(result)}]
+                return [{"type": "text", "text": json.dumps(result, indent=2)}]
 
             elif name == "search_by_tags":
                 results = await tools.handle_search_by_tags(
                     arguments, self.documents, self.config.search_limit
                 )
-                return [{"type": "text", "text": str(results)}]
+                return [{"type": "text", "text": json.dumps(results, indent=2)}]
 
             elif name == "get_document":
                 result = await tools.handle_get_document(arguments, self.documents)
-                return [{"type": "text", "text": str(result)}]
+                return [{"type": "text", "text": json.dumps(result, indent=2)}]
 
             else:
                 raise ValueError(f"Unknown tool: {name}")
