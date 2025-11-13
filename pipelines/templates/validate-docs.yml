@@ -1,0 +1,85 @@
+# Azure DevOps Pipeline Template for Documentation Validation
+# Usage:
+#   - template: pipelines/templates/validate-docs.yml
+#     parameters:
+#       paths: 'docs/ README.md'
+
+parameters:
+  - name: paths
+    type: string
+    default: 'docs/ README.md'
+    displayName: 'Paths to validate'
+
+  - name: pythonVersion
+    type: string
+    default: '3.11'
+    displayName: 'Python version'
+
+  - name: failOnWarnings
+    type: boolean
+    default: false
+    displayName: 'Fail on warnings'
+
+  - name: generateReport
+    type: boolean
+    default: true
+    displayName: 'Generate validation report'
+
+  - name: reportPath
+    type: string
+    default: 'validation-report.md'
+    displayName: 'Report output path'
+
+  - name: publishReport
+    type: boolean
+    default: true
+    displayName: 'Publish report as artifact'
+
+steps:
+  - task: UsePythonVersion@0
+    displayName: 'Set up Python ${{ parameters.pythonVersion }}'
+    inputs:
+      versionSpec: '${{ parameters.pythonVersion }}'
+      addToPath: true
+      architecture: 'x64'
+
+  - script: |
+      python -m pip install --upgrade pip
+      pip install pyyaml
+    displayName: 'Install dependencies'
+
+  - script: |
+      # Build command with options
+      CMD="python scripts/validate_docs.py ${{ parameters.paths }}"
+
+      if [ "${{ parameters.generateReport }}" = "True" ]; then
+        CMD="$CMD --report=${{ parameters.reportPath }}"
+      fi
+
+      if [ "${{ parameters.failOnWarnings }}" = "False" ]; then
+        CMD="$CMD --no-warnings"
+      fi
+
+      # Run validation
+      echo "Running: $CMD"
+      $CMD
+    displayName: 'Validate documentation'
+    continueOnError: false
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Upload validation report'
+    condition: and(failed(), eq('${{ parameters.publishReport }}', 'True'))
+    inputs:
+      targetPath: '${{ parameters.reportPath }}'
+      artifact: 'documentation-validation-report'
+      publishLocation: 'pipeline'
+    continueOnError: true
+
+  - script: |
+      if [ -f "${{ parameters.reportPath }}" ]; then
+        echo "##[group]Validation Report Summary"
+        head -n 50 "${{ parameters.reportPath }}"
+        echo "##[endgroup]"
+      fi
+    displayName: 'Display report summary'
+    condition: always()

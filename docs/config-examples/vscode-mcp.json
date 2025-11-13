@@ -1,0 +1,17 @@
+{
+  "servers": {
+    "hierarchical-docs": {
+      "command": "python",
+      "args": [
+        "-m",
+        "hierarchical_docs_mcp"
+      ],
+      "env": {
+        "DOCS_ROOT": "${workspaceFolder}/docs",
+        "MCP_DOCS_CACHE_TTL": "3600",
+        "MCP_DOCS_SEARCH_LIMIT": "10",
+        "LOG_LEVEL": "INFO"
+      }
+    }
+  }
+}

@@ -1,0 +1,52 @@
+# Multi-source configuration example
+# Place this file in your project root as .mcp-docs.yaml
+
+sources:
+  # Main documentation directory
+  - path: ./docs
+    category: guides
+    label: User Guides
+    recursive: true
+    include_patterns:
+      - "*.md"
+      - "*.mdx"
+    exclude_patterns:
+      - "node_modules"
+      - ".git"
+      - "_*"
+    format_type: markdown
+
+  # API specifications
+  - path: ./api-specs
+    category: api
+    label: API Reference
+    recursive: true
+    include_patterns:
+      - "*.yaml"
+      - "*.json"
+    format_type: openapi
+
+  # Additional tutorials from another location
+  - path: ./tutorials
+    category: tutorials
+    label: Tutorials
+    recursive: true
+    format_type: markdown
+
+# Cache configuration
+cache:
+  ttl: 3600  # 1 hour
+  max_memory_mb: 500
+
+# Search configuration
+search:
+  limit: 10
+
+# Security settings
+security:
+  allow_hidden_files: false
+  audit_logging: true
+
+# Logging
+logging:
+  level: INFO

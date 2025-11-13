@@ -1,0 +1,104 @@
+name: 'Validate Documentation'
+description: 'Validates markdown documentation files against project standards'
+author: 'Your Organization'
+
+inputs:
+  paths:
+    description: 'Space-separated paths to markdown files or directories to validate'
+    required: false
+    default: 'docs/ README.md'
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.11'
+  fail-on-warnings:
+    description: 'Fail the validation if warnings are found'
+    required: false
+    default: 'false'
+  generate-report:
+    description: 'Generate a validation report'
+    required: false
+    default: 'true'
+  report-path:
+    description: 'Path to save the validation report'
+    required: false
+    default: 'validation-report.md'
+  upload-report:
+    description: 'Upload the validation report as an artifact on failure'
+    required: false
+    default: 'true'
+
+outputs:
+  validation-status:
+    description: 'Status of the validation (passed/failed)'
+    value: ${{ steps.validate.outputs.status }}
+  critical-count:
+    description: 'Number of critical issues found'
+    value: ${{ steps.validate.outputs.critical }}
+  warning-count:
+    description: 'Number of warnings found'
+    value: ${{ steps.validate.outputs.warnings }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyyaml
+
+    - name: Validate documentation
+      id: validate
+      shell: bash
+      run: |
+        set +e  # Don't exit on error
+
+        # Build command with options
+        CMD="python scripts/validate_docs.py ${{ inputs.paths }}"
+
+        if [ "${{ inputs.generate-report }}" = "true" ]; then
+          CMD="$CMD --report=${{ inputs.report-path }}"
+        fi
+
+        if [ "${{ inputs.fail-on-warnings }}" = "false" ]; then
+          CMD="$CMD --no-warnings"
+        fi
+
+        # Run validation
+        echo "Running: $CMD"
+        $CMD
+        EXIT_CODE=$?
+
+        # Parse output for metrics (you can enhance this)
+        if [ $EXIT_CODE -eq 0 ]; then
+          echo "status=passed" >> $GITHUB_OUTPUT
+          echo "✅ Documentation validation passed"
+        else
+          echo "status=failed" >> $GITHUB_OUTPUT
+          echo "❌ Documentation validation failed"
+        fi
+
+        # Set output values (these would need to be parsed from actual output)
+        echo "critical=0" >> $GITHUB_OUTPUT
+        echo "warning=0" >> $GITHUB_OUTPUT
+
+        exit $EXIT_CODE
+
+    - name: Upload validation report
+      if: failure() && inputs.upload-report == 'true'
+      uses: actions/upload-artifact@v5
+      with:
+        name: documentation-validation-report
+        path: ${{ inputs.report-path }}
+        if-no-files-found: ignore
+
+branding:
+  icon: 'file-text'
+  color: 'blue'

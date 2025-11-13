@@ -1,0 +1,91 @@
+# Example Azure DevOps Pipeline
+# This is a complete example showing how to use the validate-docs template
+# Copy this file to the root of your repository as "azure-pipelines.yml"
+
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+# Trigger on changes to main branches or documentation files
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - docs/**
+      - '*.md'
+      - scripts/validate_docs.py
+
+# Trigger on pull requests to main branches
+pr:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - docs/**
+      - '*.md'
+
+# Use Ubuntu latest for the build agent
+pool:
+  vmImage: 'ubuntu-latest'
+
+# Define pipeline stages
+stages:
+  # Validation stage - runs first
+  - stage: Validate
+    displayName: 'Documentation Validation'
+    jobs:
+      # Basic documentation validation
+      - job: BasicValidation
+        displayName: 'Basic Validation'
+        steps:
+          - checkout: self
+            displayName: 'Checkout Code'
+
+          # Use the reusable template - just like GitHub Actions!
+          - template: pipelines/templates/validate-docs.yml
+
+      # Strict validation for production branches
+      - job: StrictValidation
+        displayName: 'Strict Validation (Main Branch Only)'
+        condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+        steps:
+          - checkout: self
+
+          - template: pipelines/templates/validate-docs.yml
+            parameters:
+              paths: 'docs/ README.md'
+              pythonVersion: '3.11'
+              failOnWarnings: true  # Fail on warnings for main branch
+              generateReport: true
+              publishReport: true
+
+  # Build stage - runs after validation succeeds
+  - stage: Build
+    displayName: 'Build Stage'
+    dependsOn: Validate
+    condition: succeeded()
+    jobs:
+      - job: BuildDocs
+        displayName: 'Build Documentation'
+        steps:
+          - script: echo "Build documentation site here"
+            displayName: 'Build Documentation Site'
+
+  # Deploy stage - only runs on main branch after successful build
+  - stage: Deploy
+    displayName: 'Deploy Stage'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployDocs
+        displayName: 'Deploy Documentation'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: echo "Deploy documentation here"
+                  displayName: 'Deploy to Documentation Site'
