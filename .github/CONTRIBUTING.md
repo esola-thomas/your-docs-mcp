@@ -2,6 +2,20 @@
 
 Thank you for your interest in contributing! This document provides guidelines and instructions for contributing to this project.
 
+## Project Constitution
+
+**IMPORTANT**: This project follows strict development principles defined in `.specify/memory/constitution.md`. All contributions must comply with:
+
+- **Library-First Architecture**: Self-contained, independently testable modules
+- **Protocol Compliance**: Strict MCP specification adherence
+- **Test-First Development**: TDD mandatory (write tests before implementation)
+- **Security-By-Design**: Path validation, input sanitization, audit logging
+- **Performance & Observability**: Measured performance targets, structured logging
+
+Pull requests that violate these principles without documented justification will be rejected.
+
+Read the full constitution before contributing: [.specify/memory/constitution.md](.specify/memory/constitution.md)
+
 ## Table of Contents
 
 - [Getting Started](#getting-started)
@@ -16,7 +30,7 @@ Thank you for your interest in contributing! This document provides guidelines a
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/Markdown-MCP.git
+   git clone https://github.com/esola-thomas/Markdown-MCP.git
    cd Markdown-MCP
    ```
 
