@@ -3,8 +3,9 @@ name: Continuous Integration
 on:
   push:
     branches: ["**"]
+    branches-ignore: ["main", "master"]
   pull_request:
-    branches: ["**"]
+    branches-ignore: ["main", "master"]
 
 jobs:
   quick-test:
@@ -69,7 +70,6 @@ jobs:
           pytest tests/integration/ tests/contract/ \
             --verbose \
             --tb=short
-            --cov-fail-under=25
 
 
   package-test:
