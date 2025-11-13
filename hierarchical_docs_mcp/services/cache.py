@@ -1,6 +1,6 @@
 """Caching layer with TTL and file change detection."""
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone, UTC
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +22,7 @@ class CacheEntry(BaseModel):
     @property
     def is_expired(self) -> bool:
         """Check if entry has exceeded TTL."""
-        return (datetime.utcnow() - self.cached_at).total_seconds() > self.ttl
+        return (datetime.now(UTC) - self.cached_at).total_seconds() > self.ttl
 
     def is_stale(self, current_mtime: datetime | None = None) -> bool:
         """Check if source file has been modified.
@@ -116,7 +116,7 @@ class Cache:
         entry = CacheEntry(
             key=key,
             value=value,
-            cached_at=datetime.utcnow(),
+            cached_at=datetime.now(UTC),
             ttl=ttl or self._default_ttl,
             file_mtime=file_mtime,
             size_bytes=size_bytes,

@@ -1,7 +1,7 @@
 """Unit tests for caching layer with TTL and file change detection."""
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone, UTC
 
 from hierarchical_docs_mcp.services.cache import Cache, CacheEntry, get_cache
 
@@ -14,7 +14,7 @@ class TestCacheEntry:
         entry = CacheEntry(
             key="test_key",
             value="test_value",
-            cached_at=datetime.utcnow(),
+            cached_at=datetime.now(UTC),
             ttl=3600,
         )
 
@@ -27,7 +27,7 @@ class TestCacheEntry:
         entry = CacheEntry(
             key="test",
             value="value",
-            cached_at=datetime.utcnow(),
+            cached_at=datetime.now(UTC),
             ttl=3600,
         )
 
@@ -38,7 +38,7 @@ class TestCacheEntry:
         entry = CacheEntry(
             key="test",
             value="value",
-            cached_at=datetime.utcnow() - timedelta(seconds=7200),
+            cached_at=datetime.now(UTC) - timedelta(seconds=7200),
             ttl=3600,
         )
 
@@ -49,18 +49,18 @@ class TestCacheEntry:
         entry = CacheEntry(
             key="test",
             value="value",
-            cached_at=datetime.utcnow(),
+            cached_at=datetime.now(UTC),
             ttl=3600,
             file_mtime=None,
         )
 
         assert entry.is_stale(None) is False
-        assert entry.is_stale(datetime.utcnow()) is False
+        assert entry.is_stale(datetime.now(UTC)) is False
 
     def test_is_stale_file_modified(self):
         """Test that entries are stale when file is modified."""
-        old_time = datetime.utcnow() - timedelta(hours=1)
-        new_time = datetime.utcnow()
+        old_time = datetime.now(UTC) - timedelta(hours=1)
+        new_time = datetime.now(UTC)
 
         entry = CacheEntry(
             key="test",
@@ -74,7 +74,7 @@ class TestCacheEntry:
 
     def test_is_stale_file_not_modified(self):
         """Test that entries are not stale when file hasn't changed."""
-        cache_time = datetime.utcnow()
+        cache_time = datetime.now(UTC)
 
         entry = CacheEntry(
             key="test",

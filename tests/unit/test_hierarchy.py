@@ -1,6 +1,6 @@
 """Unit tests for hierarchical navigation and category tree building."""
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -23,7 +23,7 @@ from hierarchical_docs_mcp.services.hierarchy import (
 @pytest.fixture
 def sample_documents():
     """Create sample documents for testing."""
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
 
     return [
         Document(
@@ -162,7 +162,7 @@ class TestBuildCategoryTree:
                 uri="docs://guides/doc1",
                 title="Doc 1",
                 content="Content 1",
-                last_modified=datetime.utcnow(),
+                last_modified=datetime.now(timezone.utc),
                 size_bytes=100,
             ),
             Document(
@@ -171,7 +171,7 @@ class TestBuildCategoryTree:
                 uri="docs://guides/doc2",
                 title="Doc 2",
                 content="Content 2",
-                last_modified=datetime.utcnow(),
+                last_modified=datetime.now(timezone.utc),
                 size_bytes=100,
             ),
         ]
@@ -191,7 +191,7 @@ class TestBuildCategoryTree:
                 uri="docs://a/b/c/d/doc",
                 title="Deep Doc",
                 content="Content",
-                last_modified=datetime.utcnow(),
+                last_modified=datetime.now(timezone.utc),
                 size_bytes=100,
             ),
         ]
@@ -583,7 +583,7 @@ class TestHierarchyEdgeCases:
             uri="docs://readme",
             title="README",
             content="Content",
-            last_modified=datetime.utcnow(),
+            last_modified=datetime.now(timezone.utc),
             size_bytes=100,
         )
 
@@ -600,7 +600,7 @@ class TestHierarchyEdgeCases:
             uri="docs://guides/test-doc_name",
             title="Test Doc",
             content="Content",
-            last_modified=datetime.utcnow(),
+            last_modified=datetime.now(timezone.utc),
             size_bytes=100,
         )
 

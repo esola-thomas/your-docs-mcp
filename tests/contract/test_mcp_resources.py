@@ -1,6 +1,6 @@
 """Contract tests for MCP resource handlers."""
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone, UTC
 from pathlib import Path
 
 import pytest
@@ -16,7 +16,7 @@ from hierarchical_docs_mcp.services.hierarchy import build_category_tree
 @pytest.fixture
 def sample_documents():
     """Create sample documents for testing."""
-    base_time = datetime.utcnow()
+    base_time = datetime.now(UTC)
 
     return [
         Document(
@@ -142,7 +142,7 @@ class TestResourceRead:
             uri="docs://guides/advanced/test",
             title="Advanced Test",
             content="Advanced content",
-            last_modified=datetime.utcnow(),
+            last_modified=datetime.now(UTC),
             size_bytes=50,
         )
 
@@ -325,7 +325,7 @@ class TestResourceEdgeCases:
             uri="docs://empty",
             title="Empty Document",
             content="",
-            last_modified=datetime.utcnow(),
+            last_modified=datetime.now(UTC),
             size_bytes=0,
         )
 
@@ -344,7 +344,7 @@ class TestResourceEdgeCases:
             uri="docs://empty/placeholder",
             title="Placeholder",
             content="# Placeholder",
-            last_modified=datetime.utcnow(),
+            last_modified=datetime.now(UTC),
             size_bytes=10,
         )
 
@@ -365,7 +365,7 @@ class TestResourceEdgeCases:
             uri="docs://test-doc_name",
             title="Special Doc",
             content="Content",
-            last_modified=datetime.utcnow(),
+            last_modified=datetime.now(UTC),
             size_bytes=50,
         )
 

@@ -179,6 +179,4 @@ class TestServeFunction:
                 mock_run.assert_called_once()
 
 
-# Note: Handler tests removed as they tested internal implementation details
-# that don't exist on the MCP Server class. The functionality is already
-# tested through contract and integration tests.
+

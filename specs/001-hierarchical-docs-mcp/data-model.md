@@ -305,7 +305,7 @@ Cached parsed content for performance.
 @property
 def is_expired(self) -> bool:
     """Check if entry has exceeded TTL"""
-    return (datetime.utcnow() - self.cached_at).total_seconds() > self.ttl
+    return (datetime.now(UTC) - self.cached_at).total_seconds() > self.ttl
 
 @property
 def is_stale(self) -> bool:
