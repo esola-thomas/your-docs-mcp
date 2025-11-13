@@ -247,9 +247,7 @@ class TestPathValidationAttackPatterns:
     def test_attack_pattern_unicode_homoglyphs(self, temp_doc_root):
         """Test unicode characters that look like path separators."""
         # Create a file with unicode in name
-        unicode_file = (
-            temp_doc_root / "guides" / "test\u2215file.md"
-        )  # ∕ (division slash)
+        unicode_file = temp_doc_root / "guides" / "test\u2215file.md"  # ∕ (division slash)
 
         # Should be able to validate if within root
         result = validate_path(unicode_file, temp_doc_root)

@@ -363,9 +363,7 @@ class TestComplexSearchScenarios:
 
         return docs
 
-    def test_search_with_excerpt_extraction_edge_cases(
-        self, documents_with_special_content
-    ):
+    def test_search_with_excerpt_extraction_edge_cases(self, documents_with_special_content):
         """Test search with documents that stress excerpt extraction."""
         # Search the long document
         results = search_content(
@@ -378,9 +376,7 @@ class TestComplexSearchScenarios:
 
         assert len(results) > 0
         # SearchResult should have been returned
-        assert hasattr(results[0], "excerpt") or hasattr(
-            results[0], "highlighted_excerpt"
-        )
+        assert hasattr(results[0], "excerpt") or hasattr(results[0], "highlighted_excerpt")
 
     def test_search_with_special_characters(self, documents_with_special_content):
         """Test search handles special regex characters."""

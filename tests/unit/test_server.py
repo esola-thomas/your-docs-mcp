@@ -168,12 +168,8 @@ class TestServeFunction:
         config = ServerConfig(docs_root=str(docs_dir))
 
         # Mock the server methods
-        with patch.object(
-            DocumentationMCPServer, "run", new_callable=AsyncMock
-        ) as mock_run:
-            with patch.object(
-                DocumentationMCPServer, "initialize", new_callable=AsyncMock
-            ):
+        with patch.object(DocumentationMCPServer, "run", new_callable=AsyncMock) as mock_run:
+            with patch.object(DocumentationMCPServer, "initialize", new_callable=AsyncMock):
                 await serve(config)
 
                 # Verify run was called

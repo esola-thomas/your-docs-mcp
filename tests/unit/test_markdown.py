@@ -524,9 +524,7 @@ class TestScanMarkdownFiles:
 
         # Create files
         (temp_docs / "guides" / "getting-started.md").write_text("# Getting Started")
-        (temp_docs / "guides" / "advanced" / "performance.md").write_text(
-            "# Performance"
-        )
+        (temp_docs / "guides" / "advanced" / "performance.md").write_text("# Performance")
 
         documents = scan_markdown_files(temp_docs, temp_docs, recursive=True)
 

@@ -40,6 +40,4 @@ def audit_log(event: str, details: dict[str, Any]) -> None:
         event: Event type (e.g., "file_access", "path_violation", "search_query")
         details: Event details dictionary
     """
-    logger.info(
-        f"AUDIT: {event}", extra={"audit": True, "event": event, "details": details}
-    )
+    logger.info(f"AUDIT: {event}", extra={"audit": True, "event": event, "details": details})

@@ -116,15 +116,9 @@ class TestSearchContent:
 
     def test_search_content_case_insensitive(self, sample_documents, sample_categories):
         """Test search is case-insensitive."""
-        results_lower = search_content(
-            "authentication", sample_documents, sample_categories
-        )
-        results_upper = search_content(
-            "AUTHENTICATION", sample_documents, sample_categories
-        )
-        results_mixed = search_content(
-            "Authentication", sample_documents, sample_categories
-        )
+        results_lower = search_content("authentication", sample_documents, sample_categories)
+        results_upper = search_content("AUTHENTICATION", sample_documents, sample_categories)
+        results_mixed = search_content("Authentication", sample_documents, sample_categories)
 
         assert len(results_lower) == len(results_upper) == len(results_mixed)
 
@@ -134,9 +128,7 @@ class TestSearchContent:
 
         assert len(results) == 1
 
-    def test_search_content_with_category_filter(
-        self, sample_documents, sample_categories
-    ):
+    def test_search_content_with_category_filter(self, sample_documents, sample_categories):
         """Test search with category filter."""
         results = search_content(
             "guide", sample_documents, sample_categories, category_filter="guides"
@@ -157,9 +149,7 @@ class TestSearchContent:
 
         assert len(results) == 0
 
-    def test_search_content_relevance_scoring(
-        self, sample_documents, sample_categories
-    ):
+    def test_search_content_relevance_scoring(self, sample_documents, sample_categories):
         """Test search results are sorted by relevance."""
         results = search_content("guide", sample_documents, sample_categories)
 
@@ -180,9 +170,7 @@ class TestSearchContent:
             if doc.uri in [r.document_uri for r in results]
         )
 
-    def test_search_content_special_characters_escaped(
-        self, sample_documents, sample_categories
-    ):
+    def test_search_content_special_characters_escaped(self, sample_documents, sample_categories):
         """Test search handles regex special characters."""
         # This should not cause regex errors
         results = search_content("API.", sample_documents, sample_categories)
@@ -190,20 +178,14 @@ class TestSearchContent:
         # Should work without raising exceptions
         assert isinstance(results, list)
 
-    def test_search_content_invalid_regex_raises_error(
-        self, sample_documents, sample_categories
-    ):
+    def test_search_content_invalid_regex_raises_error(self, sample_documents, sample_categories):
         """Test search with invalid regex pattern."""
-        with patch(
-            "hierarchical_docs_mcp.services.search.sanitize_query"
-        ) as mock_sanitize:
+        with patch("hierarchical_docs_mcp.services.search.sanitize_query") as mock_sanitize:
             mock_sanitize.return_value = "["  # Invalid regex
             with pytest.raises(SearchError, match="Invalid search pattern"):
                 search_content("[", sample_documents, sample_categories)
 
-    def test_search_content_breadcrumbs_included(
-        self, sample_documents, sample_categories
-    ):
+    def test_search_content_breadcrumbs_included(self, sample_documents, sample_categories):
         """Test search results include breadcrumbs."""
         results = search_content("authentication", sample_documents, sample_categories)
 
@@ -211,9 +193,7 @@ class TestSearchContent:
         for result in results:
             assert isinstance(result.breadcrumbs, list)
 
-    def test_search_content_highlighted_excerpt(
-        self, sample_documents, sample_categories
-    ):
+    def test_search_content_highlighted_excerpt(self, sample_documents, sample_categories):
         """Test search results include highlighted excerpts."""
         results = search_content("authentication", sample_documents, sample_categories)
 
@@ -237,9 +217,7 @@ class TestSearchContent:
         # Second search (should be cached)
         with patch("hierarchical_docs_mcp.services.search.get_cache") as mock_cache:
             mock_cache.return_value.get.return_value = results1
-            results2 = search_content(
-                "authentication", sample_documents, sample_categories
-            )
+            results2 = search_content("authentication", sample_documents, sample_categories)
 
             # Should return cached results
             assert results1 == results2
@@ -300,9 +278,7 @@ class TestSearchByMetadata:
 
     def test_search_by_multiple_tags(self, sample_documents):
         """Test searching by multiple tags (OR logic)."""
-        results = search_by_metadata(
-            tags=["security", "beginner"], documents=sample_documents
-        )
+        results = search_by_metadata(tags=["security", "beginner"], documents=sample_documents)
 
         assert len(results) >= 2
         # Should find documents with either "security" OR "beginner"
@@ -312,9 +288,7 @@ class TestSearchByMetadata:
         results = search_by_metadata(category="guides", documents=sample_documents)
 
         assert len(results) == 2
-        assert all(
-            r.category == "guides" or "guides" in r.document_uri for r in results
-        )
+        assert all(r.category == "guides" or "guides" in r.document_uri for r in results)
 
     def test_search_by_tags_and_category(self, sample_documents):
         """Test searching by both tags and category (AND logic)."""
@@ -325,17 +299,13 @@ class TestSearchByMetadata:
         assert len(results) > 0
         # Should find documents that match BOTH criteria
         for result in results:
-            matching_doc = next(
-                d for d in sample_documents if d.uri == result.document_uri
-            )
+            matching_doc = next(d for d in sample_documents if d.uri == result.document_uri)
             assert "tutorial" in matching_doc.tags
             assert matching_doc.category == "guides"
 
     def test_search_by_metadata_with_limit(self, sample_documents):
         """Test metadata search respects limit."""
-        results = search_by_metadata(
-            tags=["tutorial"], documents=sample_documents, limit=1
-        )
+        results = search_by_metadata(tags=["tutorial"], documents=sample_documents, limit=1)
 
         assert len(results) == 1
 

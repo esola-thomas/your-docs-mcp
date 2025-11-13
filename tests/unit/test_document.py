@@ -48,9 +48,7 @@ class TestDocumentModel:
     @pytest.fixture
     def document_with_long_content(self):
         """Create a document with long content."""
-        long_content = (
-            "This is a very long paragraph that exceeds the default max_length. " * 10
-        )
+        long_content = "This is a very long paragraph that exceeds the default max_length. " * 10
         return Document(
             file_path=Path("/docs/long.md"),
             relative_path=Path("long.md"),

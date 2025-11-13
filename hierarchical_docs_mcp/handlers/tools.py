@@ -163,9 +163,7 @@ async def handle_search_by_tags(
                 "excerpt": result.excerpt,
                 "breadcrumbs": result.breadcrumb_string,
                 "category": result.category,
-                "tags": [
-                    doc.tags for doc in documents if doc.uri == result.document_uri
-                ][0],
+                "tags": [doc.tags for doc in documents if doc.uri == result.document_uri][0],
             }
             for result in results
         ]
