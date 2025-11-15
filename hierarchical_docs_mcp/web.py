@@ -940,12 +940,21 @@ class DocumentationWebServer:
 
             html += '<hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #e0e0e0;">';
 
-            // Simple markdown rendering (basic) - escape first, then apply markdown
-            let content = escapeHtml(doc.content || '');
-            content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            content = content.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            content = content.replace(/`(.*?)`/g, '<code>$1</code>');
-            content = content.replace(/\n/g, '<br>');
+            // Render content with proper newline handling
+            const rawContent = doc.content || '';
+
+            // Split by newlines, escape each line, then join with <br>
+            const lines = rawContent.split('\n');
+            const escapedLines = lines.map(line => {
+                let escaped = escapeHtml(line);
+                // Apply basic markdown after escaping (on escaped entities)
+                escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                escaped = escaped.replace(/\*(.+?)\*/g, '<em>$1</em>');
+                escaped = escaped.replace(/`(.+?)`/g, '<code>$1</code>');
+                return escaped;
+            });
+
+            const content = escapedLines.join('<br>');
 
             html += '<div>' + content + '</div>';
             html += '</div>';
