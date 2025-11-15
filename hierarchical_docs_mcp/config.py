@@ -72,6 +72,11 @@ class ServerConfig(BaseSettings):
     allow_hidden: bool = False
     audit_log: bool = True
 
+    # Web server configuration
+    enable_web_server: bool = True
+    web_host: str = "127.0.0.1"
+    web_port: int = 8080
+
     @field_validator("docs_root")
     @classmethod
     def validate_docs_root(cls, v: Path | None) -> Path | None:

@@ -4,8 +4,8 @@ import asyncio
 import sys
 
 from hierarchical_docs_mcp.config import load_config
-from hierarchical_docs_mcp.server import serve
-from hierarchical_docs_mcp.utils.logger import setup_logging
+from hierarchical_docs_mcp.server import serve_both
+from hierarchical_docs_mcp.utils.logger import logger, setup_logging
 
 
 def main() -> None:
@@ -26,8 +26,13 @@ def main() -> None:
             )
             sys.exit(1)
 
+        # Log startup information
+        logger.info("Starting Markdown MCP Server")
+        if config.enable_web_server:
+            logger.info(f"Web interface will be available at http://{config.web_host}:{config.web_port}")
+
         # Run server
-        asyncio.run(serve(config))
+        asyncio.run(serve_both(config))
 
     except KeyboardInterrupt:
         print("\nServer stopped by user", file=sys.stderr)
