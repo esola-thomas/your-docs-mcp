@@ -208,7 +208,16 @@ function displayTableOfContents(toc) {
 
     let html = '<h2 style="margin-bottom: 1.5rem;">Table of Contents</h2>';
     html += '<ul class="toc-tree">';
-    html += renderTocNode(toc);
+
+    // Render children if they exist
+    if (toc.children && toc.children.length > 0) {
+        toc.children.forEach(child => {
+            html += renderTocNode(child);
+        });
+    } else {
+        html += '<li>No documentation found</li>';
+    }
+
     html += '</ul>';
 
     resultsDiv.innerHTML = html;
@@ -224,29 +233,25 @@ function displayTableOfContents(toc) {
 function renderTocNode(node) {
     let html = '';
 
-    if (node.categories) {
-        for (const [name, category] of Object.entries(node.categories)) {
-            html += '<li class="toc-item">';
-            html += '<div class="toc-category">' + escapeHtml(category.label) +
-                    ' (' + category.document_count + ' docs)</div>';
+    if (node.type === 'category') {
+        html += '<li class="toc-item">';
+        html += '<div class="toc-category">' + escapeHtml(node.name) +
+                ' (' + node.document_count + ' docs)</div>';
 
-            if (category.categories || category.documents) {
-                html += '<ul class="toc-tree">';
-                html += renderTocNode(category);
-                html += '</ul>';
-            }
-
-            html += '</li>';
+        if (node.children && node.children.length > 0) {
+            html += '<ul class="toc-tree">';
+            node.children.forEach(child => {
+                html += renderTocNode(child);
+            });
+            html += '</ul>';
         }
-    }
 
-    if (node.documents) {
-        node.documents.forEach(doc => {
-            html += '<li class="toc-item">';
-            html += '<div class="toc-document" data-uri="' + escapeHtml(doc.uri) + '">' +
-                    escapeHtml(doc.title) + '</div>';
-            html += '</li>';
-        });
+        html += '</li>';
+    } else if (node.type === 'document') {
+        html += '<li class="toc-item">';
+        html += '<div class="toc-document" data-uri="' + escapeHtml(node.uri) + '">' +
+                escapeHtml(node.name) + '</div>';
+        html += '</li>';
     }
 
     return html;
