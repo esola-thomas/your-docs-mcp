@@ -30,6 +30,8 @@ dependencies = [
     "openapi-spec-validator>=0.7.0",
     "prance>=23.6.21.0",
     "watchdog>=3.0.0",
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
 ]
 
 [project.optional-dependencies]
@@ -54,7 +56,7 @@ Repository = "https://github.com/esola-thomas/Markdown-MCP"
 packages = ["docs_mcp"]
 
 [tool.setuptools.package-data]
-docs_mcp = ["py.typed"]
+docs_mcp = ["py.typed", "static/*"]
 
 [tool.ruff]
 line-length = 100

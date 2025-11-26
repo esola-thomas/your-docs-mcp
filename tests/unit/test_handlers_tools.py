@@ -122,7 +122,7 @@ class TestHandleSearchDocumentation:
         """Test search uses default limit when not specified."""
         arguments = {"query": "test"}
 
-        with patch("hierarchical_docs_mcp.handlers.tools.search_content") as mock_search:
+        with patch("docs_mcp.handlers.tools.search_content") as mock_search:
             mock_search.return_value = []
             await handle_search_documentation(
                 arguments, sample_documents, sample_categories, search_limit=5
@@ -160,7 +160,7 @@ class TestHandleSearchDocumentation:
         """Test search handles exceptions gracefully."""
         arguments = {"query": "test"}
 
-        with patch("hierarchical_docs_mcp.handlers.tools.search_content") as mock_search:
+        with patch("docs_mcp.handlers.tools.search_content") as mock_search:
             mock_search.side_effect = Exception("Search error")
 
             results = await handle_search_documentation(
@@ -271,7 +271,7 @@ class TestHandleNavigateTo:
         """Test navigation handles exceptions gracefully."""
         arguments = {"uri": "docs://invalid"}
 
-        with patch("hierarchical_docs_mcp.handlers.tools.navigate_to_uri") as mock_navigate:
+        with patch("docs_mcp.handlers.tools.navigate_to_uri") as mock_navigate:
             mock_navigate.side_effect = Exception("Navigation error")
 
             result = await handle_navigate_to(arguments, sample_documents, sample_categories)
@@ -348,7 +348,7 @@ class TestHandleGetTableOfContents:
         """Test table of contents handles exceptions gracefully."""
         arguments = {}
 
-        with patch("hierarchical_docs_mcp.handlers.tools.get_table_of_contents") as mock_toc:
+        with patch("docs_mcp.handlers.tools.get_table_of_contents") as mock_toc:
             mock_toc.side_effect = Exception("TOC error")
 
             result = await handle_get_table_of_contents(
@@ -439,7 +439,7 @@ class TestHandleSearchByTags:
         """Test search by tags uses default limit."""
         arguments = {"tags": ["tutorial"]}
 
-        with patch("hierarchical_docs_mcp.handlers.tools.search_by_metadata") as mock_search:
+        with patch("docs_mcp.handlers.tools.search_by_metadata") as mock_search:
             mock_search.return_value = []
             await handle_search_by_tags(arguments, sample_documents, search_limit=5)
 
@@ -470,7 +470,7 @@ class TestHandleSearchByTags:
         """Test search by tags handles exceptions gracefully."""
         arguments = {"tags": ["test"]}
 
-        with patch("hierarchical_docs_mcp.handlers.tools.search_by_metadata") as mock_search:
+        with patch("docs_mcp.handlers.tools.search_by_metadata") as mock_search:
             mock_search.side_effect = Exception("Tag search error")
 
             results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
@@ -565,7 +565,7 @@ class TestHandleGetDocument:
         """Test get document handles exceptions gracefully."""
         arguments = {"uri": "docs://test"}
 
-        with patch("hierarchical_docs_mcp.handlers.tools.logger"):
+        with patch("docs_mcp.handlers.tools.logger"):
             # Simulate exception by making sample_documents invalid
             result = await handle_get_document(arguments, None)
 

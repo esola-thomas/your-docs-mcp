@@ -65,7 +65,7 @@ class TestDocumentationMCPServer:
         server = DocumentationMCPServer(config)
 
         # Mock scan_markdown_files to raise an exception
-        with patch("hierarchical_docs_mcp.server.scan_markdown_files") as mock_scan:
+        with patch("docs_mcp.server.scan_markdown_files") as mock_scan:
             mock_scan.side_effect = Exception("Test error")
 
             # Should not raise, just log error

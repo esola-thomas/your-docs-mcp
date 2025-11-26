@@ -180,7 +180,7 @@ class TestSearchContent:
 
     def test_search_content_invalid_regex_raises_error(self, sample_documents, sample_categories):
         """Test search with invalid regex pattern."""
-        with patch("hierarchical_docs_mcp.services.search.sanitize_query") as mock_sanitize:
+        with patch("docs_mcp.services.search.sanitize_query") as mock_sanitize:
             mock_sanitize.return_value = "["  # Invalid regex
             with pytest.raises(SearchError, match="Invalid search pattern"):
                 search_content("[", sample_documents, sample_categories)
@@ -215,7 +215,7 @@ class TestSearchContent:
         results1 = search_content("authentication", sample_documents, sample_categories)
 
         # Second search (should be cached)
-        with patch("hierarchical_docs_mcp.services.search.get_cache") as mock_cache:
+        with patch("docs_mcp.services.search.get_cache") as mock_cache:
             mock_cache.return_value.get.return_value = results1
             results2 = search_content("authentication", sample_documents, sample_categories)
 
