@@ -8,6 +8,7 @@ A Model Context Protocol (MCP) server that enables AI assistants to navigate and
 - **Markdown Support**: Parse markdown files with YAML frontmatter metadata (title, tags, category, order)
 - **OpenAPI Integration**: Load and query OpenAPI 3.x specifications as documentation resources
 - **Intelligent Search**: Full-text search with metadata filtering and hierarchical context
+- **Web Interface**: Built-in web server provides browser-based access to documentation with the same tools available to LLMs
 - **Cross-Platform**: Works with Claude Desktop, VS Code/GitHub Copilot, and other MCP-compatible AI assistants
 - **Security**: Built-in path validation, query sanitization, and audit logging
 - **Performance**: Caching with TTL and automatic file change detection
