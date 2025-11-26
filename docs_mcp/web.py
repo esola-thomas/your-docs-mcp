@@ -1,6 +1,5 @@
 """Web server for documentation browsing."""
 
-import json
 from pathlib import Path
 from typing import Any
 
