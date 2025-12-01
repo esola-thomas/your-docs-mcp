@@ -5,7 +5,7 @@ import sys
 
 from docs_mcp.config import load_config
 from docs_mcp.server import serve
-from docs_mcp.utils.logger import setup_logging, logger
+from docs_mcp.utils.logger import logger, setup_logging
 
 
 def main() -> None:
