@@ -2,25 +2,25 @@
 
 import pytest
 
-from hierarchical_docs_mcp.handlers.resources import (
+from docs_mcp.handlers.resources import (
     handle_resource_read,
     list_resources,
 )
-from hierarchical_docs_mcp.handlers.tools import (
+from docs_mcp.handlers.tools import (
     handle_get_table_of_contents,
     handle_navigate_to,
     handle_search_documentation,
 )
-from hierarchical_docs_mcp.services.hierarchy import (
+from docs_mcp.services.hierarchy import (
     build_category_tree,
     get_breadcrumbs,
     get_table_of_contents,
     navigate_to_uri,
 )
-from hierarchical_docs_mcp.services.markdown import (
+from docs_mcp.services.markdown import (
     scan_markdown_files,
 )
-from hierarchical_docs_mcp.services.search import search_by_metadata, search_content
+from docs_mcp.services.search import search_by_metadata, search_content
 
 
 @pytest.fixture

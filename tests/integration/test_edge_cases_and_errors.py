@@ -10,15 +10,15 @@ from pathlib import Path
 
 import pytest
 
-from hierarchical_docs_mcp.config import ServerConfig
-from hierarchical_docs_mcp.models.document import Document
-from hierarchical_docs_mcp.services.cache import Cache
-from hierarchical_docs_mcp.services.hierarchy import (
+from docs_mcp.config import ServerConfig
+from docs_mcp.models.document import Document
+from docs_mcp.services.cache import Cache
+from docs_mcp.services.hierarchy import (
     build_category_tree,
     navigate_to_uri,
 )
-from hierarchical_docs_mcp.services.markdown import scan_markdown_files
-from hierarchical_docs_mcp.services.search import (
+from docs_mcp.services.markdown import scan_markdown_files
+from docs_mcp.services.search import (
     _extract_excerpt,
     _highlight_matches,
     search_content,
@@ -211,7 +211,7 @@ class TestMainEntryPointError:
         import sys
         from io import StringIO
 
-        from hierarchical_docs_mcp.__main__ import main
+        from docs_mcp.__main__ import main
 
         # Create a config file with invalid content
         config_file = tmp_path / "invalid_config.json"
@@ -235,7 +235,7 @@ class TestMainEntryPointError:
         import sys
         from io import StringIO
 
-        from hierarchical_docs_mcp.__main__ import main
+        from docs_mcp.__main__ import main
 
         # Mock sys.argv to use non-existent config
         nonexistent = tmp_path / "nonexistent.json"
@@ -285,7 +285,7 @@ class TestServerHandlerCoverage:
     @pytest.fixture
     async def initialized_server(self, tmp_path):
         """Create an initialized server."""
-        from hierarchical_docs_mcp.server import DocumentationMCPServer
+        from docs_mcp.server import DocumentationMCPServer
 
         docs_dir = tmp_path / "docs"
         docs_dir.mkdir()
@@ -363,9 +363,7 @@ class TestComplexSearchScenarios:
 
         return docs
 
-    def test_search_with_excerpt_extraction_edge_cases(
-        self, documents_with_special_content
-    ):
+    def test_search_with_excerpt_extraction_edge_cases(self, documents_with_special_content):
         """Test search with documents that stress excerpt extraction."""
         # Search the long document
         results = search_content(
@@ -378,9 +376,7 @@ class TestComplexSearchScenarios:
 
         assert len(results) > 0
         # SearchResult should have been returned
-        assert hasattr(results[0], "excerpt") or hasattr(
-            results[0], "highlighted_excerpt"
-        )
+        assert hasattr(results[0], "excerpt") or hasattr(results[0], "highlighted_excerpt")
 
     def test_search_with_special_characters(self, documents_with_special_content):
         """Test search handles special regex characters."""

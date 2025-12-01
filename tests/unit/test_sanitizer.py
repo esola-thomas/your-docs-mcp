@@ -2,7 +2,7 @@
 
 import pytest
 
-from hierarchical_docs_mcp.security.sanitizer import (
+from docs_mcp.security.sanitizer import (
     MAX_QUERY_LENGTH,
     SanitizationError,
     sanitize_filename,

@@ -1,6 +1,5 @@
 """Web server for documentation browsing."""
 
-import json
 from pathlib import Path
 from typing import Any
 
@@ -10,11 +9,11 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from hierarchical_docs_mcp.config import ServerConfig
-from hierarchical_docs_mcp.handlers import tools
-from hierarchical_docs_mcp.models.document import Document
-from hierarchical_docs_mcp.models.navigation import Category
-from hierarchical_docs_mcp.utils.logger import logger
+from docs_mcp.config import ServerConfig
+from docs_mcp.handlers import tools
+from docs_mcp.models.document import Document
+from docs_mcp.models.navigation import Category
+from docs_mcp.utils.logger import logger
 
 
 class SearchRequest(BaseModel):

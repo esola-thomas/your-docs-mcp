@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from hierarchical_docs_mcp.models.openapi import APIOperation, OpenAPISpecification
+from docs_mcp.models.openapi import APIOperation, OpenAPISpecification
 
 
 class TestAPIOperation:
@@ -78,11 +78,11 @@ class TestAPIOperation:
         assert detailed_operation.request_body is not None
         assert len(detailed_operation.responses) == 2
 
-    def test_full_description_with_both_summary_and_description(
-        self, detailed_operation
-    ):
+    def test_full_description_with_both_summary_and_description(self, detailed_operation):
         """Test full_description property combines summary and description."""
-        expected = "Create a new user\n\nCreates a new user in the system with the provided details."
+        expected = (
+            "Create a new user\n\nCreates a new user in the system with the provided details."
+        )
         assert detailed_operation.full_description == expected
 
     def test_full_description_with_only_summary(self, basic_operation):
@@ -318,10 +318,7 @@ class TestOpenAPISpecification:
         )
 
         assert len(spec.operations) == 3
-        assert all(
-            key in spec.operations
-            for key in ["get_users", "create_user", "delete_user"]
-        )
+        assert all(key in spec.operations for key in ["get_users", "create_user", "delete_user"])
 
     def test_spec_empty_operations_and_schemas(self, basic_spec):
         """Test specification with empty operations and schemas."""

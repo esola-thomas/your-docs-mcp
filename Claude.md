@@ -575,7 +575,7 @@ dependencies = [
 ]
 
 [project.scripts]
-hierarchical-docs-mcp = "hierarchical_docs_mcp.main:main"
+hierarchical-docs-mcp = "docs_mcp.main:main"
 ```
 
 Users install with: `uvx hierarchical-docs-mcp` or `pip install hierarchical-docs-mcp`
@@ -599,7 +599,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 EXPOSE 8080
-CMD ["uvicorn", "hierarchical_docs_mcp.http_server:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "docs_mcp.http_server:app", "--host", "0.0.0.0", "--port", "8080"]
 ```
 
 Deploy to cloud platforms (AWS, Azure, GCP) for team-wide access via HTTP transport.
@@ -644,8 +644,8 @@ hierarchical-docs-mcp/
 
 **For Python:**
 ```
-hierarchical_docs_mcp/
-├── hierarchical_docs_mcp/
+docs_mcp/
+├── docs_mcp/
 │   ├── __init__.py
 │   ├── main.py                  # Entry point
 │   ├── server.py                # Server setup

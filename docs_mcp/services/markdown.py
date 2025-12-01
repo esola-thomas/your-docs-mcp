@@ -7,10 +7,10 @@ from typing import Any, cast
 
 import yaml
 
-from hierarchical_docs_mcp.models.document import Document
-from hierarchical_docs_mcp.security.path_validator import validate_path
-from hierarchical_docs_mcp.services.cache import get_cache
-from hierarchical_docs_mcp.utils.logger import audit_log, logger
+from docs_mcp.models.document import Document
+from docs_mcp.security.path_validator import validate_path
+from docs_mcp.services.cache import get_cache
+from docs_mcp.utils.logger import audit_log, logger
 
 
 class MarkdownParseError(Exception):

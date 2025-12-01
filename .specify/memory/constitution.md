@@ -74,7 +74,7 @@ Performance goals MUST be defined and measured. Text-based I/O MUST be used for 
 
 **Rationale**: Documentation servers must be responsive to maintain AI assistant workflow. Text I/O and structured logging enable debugging production issues without additional tooling. Performance regressions are easier to prevent than to fix.
 
-**Enforcement**: Performance benchmarks MUST be run for every release. Logging MUST use hierarchical_docs_mcp.utils.logger for consistency. Performance degradation >20% requires justification and approval.
+**Enforcement**: Performance benchmarks MUST be run for every release. Logging MUST use docs_mcp.utils.logger for consistency. Performance degradation >20% requires justification and approval.
 
 ## Quality Standards
 

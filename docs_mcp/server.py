@@ -8,13 +8,13 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Resource, Tool
 
-from hierarchical_docs_mcp.config import ServerConfig
-from hierarchical_docs_mcp.handlers import resources, tools
-from hierarchical_docs_mcp.models.document import Document
-from hierarchical_docs_mcp.models.navigation import Category
-from hierarchical_docs_mcp.services.hierarchy import build_category_tree
-from hierarchical_docs_mcp.services.markdown import scan_markdown_files
-from hierarchical_docs_mcp.utils.logger import logger
+from docs_mcp.config import ServerConfig
+from docs_mcp.handlers import resources, tools
+from docs_mcp.models.document import Document
+from docs_mcp.models.navigation import Category
+from docs_mcp.services.hierarchy import build_category_tree
+from docs_mcp.services.markdown import scan_markdown_files
+from docs_mcp.utils.logger import logger
 
 
 class DocumentationMCPServer:
@@ -151,9 +151,7 @@ class DocumentationMCPServer:
                 return [{"type": "text", "text": json.dumps(results, indent=2)}]
 
             elif name == "navigate_to":
-                result = await tools.handle_navigate_to(
-                    arguments, self.documents, self.categories
-                )
+                result = await tools.handle_navigate_to(arguments, self.documents, self.categories)
                 return [{"type": "text", "text": json.dumps(result, indent=2)}]
 
             elif name == "get_table_of_contents":
@@ -178,9 +176,7 @@ class DocumentationMCPServer:
         @self.server.list_resources()
         async def list_resources() -> list[Resource]:
             """List available resources."""
-            resource_list = await resources.list_resources(
-                self.documents, self.categories
-            )
+            resource_list = await resources.list_resources(self.documents, self.categories)
             return [
                 Resource(
                     uri=r["uri"],
@@ -194,9 +190,7 @@ class DocumentationMCPServer:
         @self.server.read_resource()
         async def read_resource(uri: str) -> str:
             """Read a resource by URI."""
-            result = await resources.handle_resource_read(
-                uri, self.documents, self.categories
-            )
+            result = await resources.handle_resource_read(uri, self.documents, self.categories)
 
             if "error" in result:
                 raise ValueError(result["error"])
@@ -266,7 +260,7 @@ async def serve_both(config: ServerConfig) -> None:
     """
     import uvicorn
 
-    from hierarchical_docs_mcp.web import DocumentationWebServer
+    from docs_mcp.web import DocumentationWebServer
 
     # Create and initialize MCP server
     mcp_server = DocumentationMCPServer(config)

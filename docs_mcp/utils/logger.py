@@ -5,7 +5,7 @@ import sys
 from typing import Any
 
 # Create logger instance
-logger = logging.getLogger("hierarchical_docs_mcp")
+logger = logging.getLogger("docs_mcp")
 
 
 def setup_logging(level: str = "INFO") -> None:
@@ -40,6 +40,4 @@ def audit_log(event: str, details: dict[str, Any]) -> None:
         event: Event type (e.g., "file_access", "path_violation", "search_query")
         details: Event details dictionary
     """
-    logger.info(
-        f"AUDIT: {event}", extra={"audit": True, "event": event, "details": details}
-    )
+    logger.info(f"AUDIT: {event}", extra={"audit": True, "event": event, "details": details})

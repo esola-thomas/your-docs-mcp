@@ -15,9 +15,7 @@ class DocumentationSource(BaseModel):
     label: str
     recursive: bool = True
     include_patterns: list[str] = Field(default_factory=lambda: ["*.md", "*.mdx"])
-    exclude_patterns: list[str] = Field(
-        default_factory=lambda: ["node_modules", ".git", "_*"]
-    )
+    exclude_patterns: list[str] = Field(default_factory=lambda: ["node_modules", ".git", "_*"])
     format_type: str = "markdown"
 
 

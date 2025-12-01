@@ -49,7 +49,7 @@
 ## Path Conventions
 
 All paths are relative to repository root:
-- Source code: `hierarchical_docs_mcp/`
+- Source code: `docs_mcp/`
 - Tests: `tests/`
 - Documentation: `docs/`
 
@@ -59,10 +59,10 @@ All paths are relative to repository root:
 
 **Purpose**: Project initialization and basic structure
 
-- [x] T001 Create project structure per implementation plan in hierarchical_docs_mcp/
+- [x] T001 Create project structure per implementation plan in docs_mcp/
 - [x] T002 Initialize Python project with pyproject.toml including dependencies (mcp, pyyaml, pydantic, pydantic-settings, openapi-spec-validator, prance, watchdog, pytest, pytest-asyncio, pytest-mock)
-- [x] T003 [P] Create hierarchical_docs_mcp/__init__.py with package version and exports
-- [x] T004 [P] Create empty module __init__.py files in hierarchical_docs_mcp/models/, hierarchical_docs_mcp/handlers/, hierarchical_docs_mcp/services/, hierarchical_docs_mcp/security/, hierarchical_docs_mcp/utils/
+- [x] T003 [P] Create docs_mcp/__init__.py with package version and exports
+- [x] T004 [P] Create empty module __init__.py files in docs_mcp/models/, docs_mcp/handlers/, docs_mcp/services/, docs_mcp/security/, docs_mcp/utils/
 - [x] T005 [P] Create test directory structure with tests/contract/, tests/integration/, tests/unit/
 - [x] T006 [P] Create sample documentation structure in docs/guides/ and docs/api/
 - [x] T007 [P] Create docs/guides/getting-started.md with YAML frontmatter for testing
@@ -79,22 +79,22 @@ All paths are relative to repository root:
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [x] T012 Create hierarchical_docs_mcp/utils/logger.py with structured logging setup (supports audit trail)
-- [x] T013 Create hierarchical_docs_mcp/config.py with pydantic-settings configuration classes (ServerConfig, SourceConfig)
-- [x] T014 Create hierarchical_docs_mcp/security/path_validator.py with validate_path() function preventing directory traversal
-- [x] T015 Create hierarchical_docs_mcp/security/sanitizer.py with sanitize_query() and sanitize_openapi_description() functions
+- [x] T012 Create docs_mcp/utils/logger.py with structured logging setup (supports audit trail)
+- [x] T013 Create docs_mcp/config.py with pydantic-settings configuration classes (ServerConfig, SourceConfig)
+- [x] T014 Create docs_mcp/security/path_validator.py with validate_path() function preventing directory traversal
+- [x] T015 Create docs_mcp/security/sanitizer.py with sanitize_query() and sanitize_openapi_description() functions
 - [ ] T016 Write tests/unit/test_path_validator.py with security attack patterns (../../etc/passwd, hidden files, etc.)
 - [ ] T017 Write tests/unit/test_sanitizer.py with injection pattern tests
-- [x] T018 Implement path validation logic in hierarchical_docs_mcp/security/path_validator.py to pass security tests
-- [x] T019 Implement sanitization logic in hierarchical_docs_mcp/security/sanitizer.py to pass injection tests
-- [x] T020 Create hierarchical_docs_mcp/models/document.py with DocumentationSource and Document pydantic models
-- [x] T021 Create hierarchical_docs_mcp/models/navigation.py with Category, NavigationContext, SearchResult pydantic models
-- [x] T022 Create hierarchical_docs_mcp/models/openapi.py with OpenAPISpecification and APIOperation pydantic models
-- [x] T023 Create hierarchical_docs_mcp/services/cache.py with CacheEntry model and TTL-based caching logic
+- [x] T018 Implement path validation logic in docs_mcp/security/path_validator.py to pass security tests
+- [x] T019 Implement sanitization logic in docs_mcp/security/sanitizer.py to pass injection tests
+- [x] T020 Create docs_mcp/models/document.py with DocumentationSource and Document pydantic models
+- [x] T021 Create docs_mcp/models/navigation.py with Category, NavigationContext, SearchResult pydantic models
+- [x] T022 Create docs_mcp/models/openapi.py with OpenAPISpecification and APIOperation pydantic models
+- [x] T023 Create docs_mcp/services/cache.py with CacheEntry model and TTL-based caching logic
 - [ ] T024 Write tests/unit/test_cache.py for cache hit/miss, TTL expiration, and invalidation
-- [x] T025 Implement caching functionality in hierarchical_docs_mcp/services/cache.py to pass cache tests
-- [x] T026 Create hierarchical_docs_mcp/server.py with MCP Server initialization and capability declaration
-- [x] T027 Create hierarchical_docs_mcp/__main__.py with CLI entry point for stdio transport
+- [x] T025 Implement caching functionality in docs_mcp/services/cache.py to pass cache tests
+- [x] T026 Create docs_mcp/server.py with MCP Server initialization and capability declaration
+- [x] T027 Create docs_mcp/__main__.py with CLI entry point for stdio transport
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel ✅
 
@@ -118,14 +118,14 @@ All paths are relative to repository root:
 
 ### Implementation for User Story 1 ✅
 
-- [x] T033 [P] [US1] Implement hierarchical_docs_mcp/services/markdown.py with parse_markdown_with_metadata() function using pyyaml
-- [x] T034 [P] [US1] Implement hierarchical_docs_mcp/services/hierarchy.py with build_category_tree(), get_breadcrumbs(), and navigate_to_uri() functions
-- [x] T035 [US1] Implement hierarchical_docs_mcp/services/search.py with basic regex-based search_content() function (full-text search with caching)
-- [x] T036 [US1] Implement hierarchical_docs_mcp/handlers/tools.py with search_documentation(), navigate_to(), and get_table_of_contents() tool handlers
-- [x] T037 [US1] Implement hierarchical_docs_mcp/handlers/resources.py with resource handlers for docs:// URI patterns (root, category, section, document)
-- [ ] T038 [US1] Integrate file watching in hierarchical_docs_mcp/services/cache.py using watchdog library for auto-invalidation (TODO: Not yet implemented)
-- [x] T039 [US1] Register tool and resource handlers in hierarchical_docs_mcp/server.py with MCP Server instance
-- [x] T040 [US1] Add configuration loading logic in hierarchical_docs_mcp/__main__.py to read DOCS_ROOT and initialize server
+- [x] T033 [P] [US1] Implement docs_mcp/services/markdown.py with parse_markdown_with_metadata() function using pyyaml
+- [x] T034 [P] [US1] Implement docs_mcp/services/hierarchy.py with build_category_tree(), get_breadcrumbs(), and navigate_to_uri() functions
+- [x] T035 [US1] Implement docs_mcp/services/search.py with basic regex-based search_content() function (full-text search with caching)
+- [x] T036 [US1] Implement docs_mcp/handlers/tools.py with search_documentation(), navigate_to(), and get_table_of_contents() tool handlers
+- [x] T037 [US1] Implement docs_mcp/handlers/resources.py with resource handlers for docs:// URI patterns (root, category, section, document)
+- [ ] T038 [US1] Integrate file watching in docs_mcp/services/cache.py using watchdog library for auto-invalidation (TODO: Not yet implemented)
+- [x] T039 [US1] Register tool and resource handlers in docs_mcp/server.py with MCP Server instance
+- [x] T040 [US1] Add configuration loading logic in docs_mcp/__main__.py to read DOCS_ROOT and initialize server
 - [ ] T041 [US1] Verify all User Story 1 tests pass (T028-T032) (TODO: Tests not yet written)
 
 **Checkpoint**: Implementation complete ✅ - Tests need to be written and run to verify functionality
@@ -147,14 +147,14 @@ All paths are relative to repository root:
 
 ### Implementation for User Story 2
 
-- [ ] T046 [P] [US2] Implement hierarchical_docs_mcp/services/openapi_loader.py with load_openapi_spec() function using openapi-spec-validator and prance
-- [ ] T047 [P] [US2] Implement resolve_openapi_references() in hierarchical_docs_mcp/services/openapi_loader.py using prance ResolvingParser
-- [ ] T048 [P] [US2] Implement extract_operations_by_tag() and extract_schema_definitions() in hierarchical_docs_mcp/services/openapi_loader.py
-- [ ] T049 [US2] Add list_api_endpoints(), get_endpoint_docs(), and get_schema_definition() tool handlers to hierarchical_docs_mcp/handlers/tools.py
-- [ ] T050 [US2] Add resource handlers for api:// URI patterns to hierarchical_docs_mcp/handlers/resources.py
-- [ ] T051 [US2] Integrate OpenAPI sanitization in hierarchical_docs_mcp/security/sanitizer.py (check for prompt injection in descriptions)
-- [ ] T052 [US2] Add OpenAPI spec loading to hierarchical_docs_mcp/config.py (MCP_DOCS_OPENAPI_SPECS environment variable)
-- [ ] T053 [US2] Register OpenAPI tools and resources in hierarchical_docs_mcp/server.py
+- [ ] T046 [P] [US2] Implement docs_mcp/services/openapi_loader.py with load_openapi_spec() function using openapi-spec-validator and prance
+- [ ] T047 [P] [US2] Implement resolve_openapi_references() in docs_mcp/services/openapi_loader.py using prance ResolvingParser
+- [ ] T048 [P] [US2] Implement extract_operations_by_tag() and extract_schema_definitions() in docs_mcp/services/openapi_loader.py
+- [ ] T049 [US2] Add list_api_endpoints(), get_endpoint_docs(), and get_schema_definition() tool handlers to docs_mcp/handlers/tools.py
+- [ ] T050 [US2] Add resource handlers for api:// URI patterns to docs_mcp/handlers/resources.py
+- [ ] T051 [US2] Integrate OpenAPI sanitization in docs_mcp/security/sanitizer.py (check for prompt injection in descriptions)
+- [ ] T052 [US2] Add OpenAPI spec loading to docs_mcp/config.py (MCP_DOCS_OPENAPI_SPECS environment variable)
+- [ ] T053 [US2] Register OpenAPI tools and resources in docs_mcp/server.py
 - [ ] T054 [US2] Verify all User Story 2 tests pass (T042-T045)
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - markdown navigation AND OpenAPI discovery
@@ -177,13 +177,13 @@ All paths are relative to repository root:
 
 ### Implementation for User Story 5
 
-- [ ] T058 [US5] Integrate path validation into all file access points in hierarchical_docs_mcp/services/markdown.py (before reading files)
-- [ ] T059 [US5] Integrate path validation into hierarchical_docs_mcp/services/hierarchy.py (before directory scanning)
-- [ ] T060 [US5] Integrate query sanitization into hierarchical_docs_mcp/services/search.py (before regex compilation)
-- [ ] T061 [US5] Add audit logging for all security violations in hierarchical_docs_mcp/security/path_validator.py and sanitizer.py
-- [ ] T062 [US5] Add audit logging for all file access attempts in hierarchical_docs_mcp/services/markdown.py
-- [ ] T063 [US5] Implement timeout protection for long-running searches in hierarchical_docs_mcp/handlers/tools.py (30 second default)
-- [ ] T064 [US5] Add error handling with clear security error messages in hierarchical_docs_mcp/handlers/tools.py and resources.py
+- [ ] T058 [US5] Integrate path validation into all file access points in docs_mcp/services/markdown.py (before reading files)
+- [ ] T059 [US5] Integrate path validation into docs_mcp/services/hierarchy.py (before directory scanning)
+- [ ] T060 [US5] Integrate query sanitization into docs_mcp/services/search.py (before regex compilation)
+- [ ] T061 [US5] Add audit logging for all security violations in docs_mcp/security/path_validator.py and sanitizer.py
+- [ ] T062 [US5] Add audit logging for all file access attempts in docs_mcp/services/markdown.py
+- [ ] T063 [US5] Implement timeout protection for long-running searches in docs_mcp/handlers/tools.py (30 second default)
+- [ ] T064 [US5] Add error handling with clear security error messages in docs_mcp/handlers/tools.py and resources.py
 - [ ] T065 [US5] Verify all User Story 5 security tests pass (T055-T057)
 
 **Checkpoint**: Security hardening complete - system blocks 100% of tested attack patterns
@@ -205,7 +205,7 @@ All paths are relative to repository root:
 ### Implementation for User Story 3
 
 - [ ] T069 [P] [US3] Ensure pathlib.Path usage throughout for cross-platform path handling in all services
-- [ ] T070 [P] [US3] Add workspace-relative path resolution in hierarchical_docs_mcp/config.py (support ${workspaceFolder} variable)
+- [ ] T070 [P] [US3] Add workspace-relative path resolution in docs_mcp/config.py (support ${workspaceFolder} variable)
 - [ ] T071 [US3] Test stdio transport on Windows, macOS, and Linux in CI (update GitHub Actions workflow if exists)
 - [ ] T072 [US3] Create Claude Desktop config example in docs/config-examples/claude-desktop.json
 - [ ] T073 [US3] Create VS Code config example in docs/config-examples/vscode-mcp.json
@@ -230,12 +230,12 @@ All paths are relative to repository root:
 
 ### Implementation for User Story 4
 
-- [ ] T079 [P] [US4] Extend hierarchical_docs_mcp/config.py to support sources list with SourceConfig objects
-- [ ] T080 [P] [US4] Implement multi-source scanning in hierarchical_docs_mcp/services/hierarchy.py (iterate all configured sources)
-- [ ] T081 [US4] Add source attribution to Category and Document models in hierarchical_docs_mcp/models/document.py and navigation.py
-- [ ] T082 [US4] Update hierarchical_docs_mcp/services/search.py to search across all sources with source filtering
-- [ ] T083 [US4] Update navigation context in hierarchical_docs_mcp/handlers/tools.py to show source labels in breadcrumbs
-- [ ] T084 [US4] Add search_by_metadata() tool handler in hierarchical_docs_mcp/handlers/tools.py supporting tag-based search across sources
+- [ ] T079 [P] [US4] Extend docs_mcp/config.py to support sources list with SourceConfig objects
+- [ ] T080 [P] [US4] Implement multi-source scanning in docs_mcp/services/hierarchy.py (iterate all configured sources)
+- [ ] T081 [US4] Add source attribution to Category and Document models in docs_mcp/models/document.py and navigation.py
+- [ ] T082 [US4] Update docs_mcp/services/search.py to search across all sources with source filtering
+- [ ] T083 [US4] Update navigation context in docs_mcp/handlers/tools.py to show source labels in breadcrumbs
+- [ ] T084 [US4] Add search_by_metadata() tool handler in docs_mcp/handlers/tools.py supporting tag-based search across sources
 - [ ] T085 [US4] Create .mcp-docs.yaml configuration file example in docs/config-examples/ showing multi-source setup
 - [ ] T086 [US4] Update README.md with multi-source configuration documentation
 - [ ] T087 [US4] Verify all User Story 4 tests pass (T076-T078)
@@ -254,7 +254,7 @@ All paths are relative to repository root:
 - [ ] T091 [P] Create detailed API documentation in docs/api-reference.md documenting all MCP tools and resources
 - [ ] T092 [P] Create troubleshooting guide in docs/troubleshooting.md based on quickstart.md common issues
 - [ ] T093 [P] Create security guide in docs/security.md documenting validation patterns and best practices
-- [ ] T094 [P] Add type hints and docstrings to all public functions across hierarchical_docs_mcp/
+- [ ] T094 [P] Add type hints and docstrings to all public functions across docs_mcp/
 - [ ] T095 Code cleanup and refactoring across all modules for readability
 - [ ] T096 Run quickstart.md validation manually with real Claude Desktop and VS Code
 - [ ] T097 Create GitHub Actions CI workflow for automated testing (pytest, coverage, security scans)
@@ -338,17 +338,17 @@ Team of 3 developers can work in parallel after tests are written:
 
 ```bash
 # Developer 1: Markdown parsing
-T033: hierarchical_docs_mcp/services/markdown.py
+T033: docs_mcp/services/markdown.py
 
 # Developer 2: Hierarchy building
-T034: hierarchical_docs_mcp/services/hierarchy.py
+T034: docs_mcp/services/hierarchy.py
 
 # Developer 3: Search engine
-T035: hierarchical_docs_mcp/services/search.py
+T035: docs_mcp/services/search.py
 
 # Then all integrate in handlers (sequential)
-T036: hierarchical_docs_mcp/handlers/tools.py
-T037: hierarchical_docs_mcp/handlers/resources.py
+T036: docs_mcp/handlers/tools.py
+T037: docs_mcp/handlers/resources.py
 ```
 
 ---

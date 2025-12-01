@@ -91,7 +91,7 @@ pytest tests/unit/test_path_validator.py tests/unit/test_sanitizer.py
 ### Run Tests with Coverage
 
 ```bash
-pytest tests/ --cov=hierarchical_docs_mcp --cov-report=html
+pytest tests/ --cov=docs_mcp --cov-report=html
 ```
 
 View coverage report: `open htmlcov/index.html`
@@ -110,13 +110,13 @@ We use **Ruff** for linting and formatting:
 
 ```bash
 # Check for issues
-ruff check hierarchical_docs_mcp/ tests/
+ruff check docs_mcp/ tests/
 
 # Auto-fix issues
-ruff check --fix hierarchical_docs_mcp/ tests/
+ruff check --fix docs_mcp/ tests/
 
 # Format code
-ruff format hierarchical_docs_mcp/ tests/
+ruff format docs_mcp/ tests/
 ```
 
 ### Type Checking
@@ -124,7 +124,7 @@ ruff format hierarchical_docs_mcp/ tests/
 We use **MyPy** for type checking:
 
 ```bash
-mypy hierarchical_docs_mcp/ --ignore-missing-imports
+mypy docs_mcp/ --ignore-missing-imports
 ```
 
 ### Code Standards
@@ -286,7 +286,7 @@ Example test structure:
 
 ```python
 import pytest
-from hierarchical_docs_mcp.services.markdown import parse_markdown
+from docs_mcp.services.markdown import parse_markdown
 
 class TestMarkdownParsing:
     """Test markdown parsing functionality."""

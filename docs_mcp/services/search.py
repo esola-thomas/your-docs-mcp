@@ -3,12 +3,12 @@
 import re
 from typing import Literal, cast
 
-from hierarchical_docs_mcp.models.document import Document
-from hierarchical_docs_mcp.models.navigation import Category, SearchResult
-from hierarchical_docs_mcp.security.sanitizer import sanitize_query
-from hierarchical_docs_mcp.services.cache import get_cache
-from hierarchical_docs_mcp.services.hierarchy import get_breadcrumbs
-from hierarchical_docs_mcp.utils.logger import logger
+from docs_mcp.models.document import Document
+from docs_mcp.models.navigation import Category, SearchResult
+from docs_mcp.security.sanitizer import sanitize_query
+from docs_mcp.services.cache import get_cache
+from docs_mcp.services.hierarchy import get_breadcrumbs
+from docs_mcp.utils.logger import logger
 
 
 class SearchError(Exception):

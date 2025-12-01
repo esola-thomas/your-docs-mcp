@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from hierarchical_docs_mcp.utils.logger import audit_log, logger
+from docs_mcp.utils.logger import audit_log, logger
 
 
 class PathValidationError(Exception):
@@ -47,9 +47,7 @@ def validate_path(
                     "reason": "outside_allowed_directory",
                 },
             )
-            raise PathValidationError(
-                f"Path is outside allowed directory: {requested_path}"
-            )
+            raise PathValidationError(f"Path is outside allowed directory: {requested_path}")
 
         # Check for hidden files/directories unless explicitly allowed
         if not allow_hidden:

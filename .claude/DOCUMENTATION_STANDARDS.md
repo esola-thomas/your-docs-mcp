@@ -228,7 +228,7 @@ Practical examples here...
 ```markdown
 ​```python
 # Example: Loading configuration
-from hierarchical_docs_mcp.config import ServerConfig
+from docs_mcp.config import ServerConfig
 
 config = ServerConfig(
     docs_root="/path/to/docs",

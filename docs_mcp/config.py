@@ -15,9 +15,7 @@ class SourceConfig(BaseSettings):
     label: str
     recursive: bool = True
     include_patterns: list[str] = Field(default_factory=lambda: ["*.md", "*.mdx"])
-    exclude_patterns: list[str] = Field(
-        default_factory=lambda: ["node_modules", ".git", "_*"]
-    )
+    exclude_patterns: list[str] = Field(default_factory=lambda: ["node_modules", ".git", "_*"])
     format_type: Literal["markdown", "openapi"] = "markdown"
 
     @field_validator("path")

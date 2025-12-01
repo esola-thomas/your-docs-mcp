@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from hierarchical_docs_mcp.utils.logger import logger
+from docs_mcp.utils.logger import logger
 
 
 class CacheEntry(BaseModel):
@@ -104,9 +104,7 @@ class Cache:
         size_bytes = self._estimate_size(value)
 
         # Check if we need to evict entries
-        while (
-            self._current_size_bytes + size_bytes > self._max_size_bytes and self._cache
-        ):
+        while self._current_size_bytes + size_bytes > self._max_size_bytes and self._cache:
             self._evict_oldest()
 
         # Get file modification time if path provided
@@ -160,9 +158,7 @@ class Cache:
         keys_to_remove = [k for k in self._cache.keys() if k.startswith(prefix)]
         for key in keys_to_remove:
             self.invalidate(key)
-        logger.debug(
-            f"Cache invalidated prefix: {prefix} ({len(keys_to_remove)} entries)"
-        )
+        logger.debug(f"Cache invalidated prefix: {prefix} ({len(keys_to_remove)} entries)")
         return len(keys_to_remove)
 
     def clear(self) -> None:

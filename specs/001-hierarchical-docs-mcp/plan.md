@@ -97,7 +97,7 @@ specs/001-hierarchical-docs-mcp/
 ### Source Code (repository root)
 
 ```text
-hierarchical_docs_mcp/
+docs_mcp/
 ├── __init__.py          # Package initialization, version
 ├── __main__.py          # CLI entry point for stdio transport
 ├── server.py            # MCP server initialization and configuration

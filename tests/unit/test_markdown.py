@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from hierarchical_docs_mcp.models.document import Document
-from hierarchical_docs_mcp.services.markdown import (
+from docs_mcp.models.document import Document
+from docs_mcp.services.markdown import (
     MarkdownParseError,
     _extract_frontmatter,
     _extract_title,
@@ -524,9 +524,7 @@ class TestScanMarkdownFiles:
 
         # Create files
         (temp_docs / "guides" / "getting-started.md").write_text("# Getting Started")
-        (temp_docs / "guides" / "advanced" / "performance.md").write_text(
-            "# Performance"
-        )
+        (temp_docs / "guides" / "advanced" / "performance.md").write_text("# Performance")
 
         documents = scan_markdown_files(temp_docs, temp_docs, recursive=True)
 

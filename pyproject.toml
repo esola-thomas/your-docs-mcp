@@ -3,8 +3,8 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hierarchical-docs-mcp"
-version = "0.1.0"
+name = "docs-mcp"
+version = "0.0.0"
 description = "Model Context Protocol server for hierarchical documentation navigation with markdown and OpenAPI support"
 readme = "README.md"
 license = {text = "MIT"}
@@ -32,6 +32,8 @@ dependencies = [
     "watchdog>=3.0.0",
     "fastapi>=0.104.0",
     "uvicorn>=0.24.0",
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
 ]
 
 [project.optional-dependencies]
@@ -46,17 +48,17 @@ dev = [
 ]
 
 [project.scripts]
-hierarchical-docs-mcp = "hierarchical_docs_mcp.__main__:main"
+docs-mcp = "docs_mcp.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/esola-thomas/Markdown-MCP"
 Repository = "https://github.com/esola-thomas/Markdown-MCP"
 
 [tool.setuptools]
-packages = ["hierarchical_docs_mcp"]
+packages = ["docs_mcp"]
 
 [tool.setuptools.package-data]
-hierarchical_docs_mcp = ["py.typed", "static/*"]
+docs_mcp = ["py.typed", "static/*"]
 
 [tool.ruff]
 line-length = 100

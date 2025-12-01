@@ -97,7 +97,7 @@ jobs:
 
       - name: Test CLI entry point
         run: |
-          hierarchical-docs-mcp --help || true
+          docs-mcp --help || true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v5

@@ -1,10 +1,10 @@
 {
   "servers": {
-    "hierarchical-docs": {
+    "docs": {
       "command": "python",
       "args": [
         "-m",
-        "hierarchical_docs_mcp"
+        "docs_mcp"
       ],
       "env": {
         "DOCS_ROOT": "${workspaceFolder}/docs",

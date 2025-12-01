@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from hierarchical_docs_mcp.config import ServerConfig
-from hierarchical_docs_mcp.server import DocumentationMCPServer, serve
+from docs_mcp.config import ServerConfig
+from docs_mcp.server import DocumentationMCPServer, serve
 
 
 class TestDocumentationMCPServer:
@@ -65,7 +65,7 @@ class TestDocumentationMCPServer:
         server = DocumentationMCPServer(config)
 
         # Mock scan_markdown_files to raise an exception
-        with patch("hierarchical_docs_mcp.server.scan_markdown_files") as mock_scan:
+        with patch("docs_mcp.server.scan_markdown_files") as mock_scan:
             mock_scan.side_effect = Exception("Test error")
 
             # Should not raise, just log error
@@ -168,12 +168,8 @@ class TestServeFunction:
         config = ServerConfig(docs_root=str(docs_dir))
 
         # Mock the server methods
-        with patch.object(
-            DocumentationMCPServer, "run", new_callable=AsyncMock
-        ) as mock_run:
-            with patch.object(
-                DocumentationMCPServer, "initialize", new_callable=AsyncMock
-            ):
+        with patch.object(DocumentationMCPServer, "run", new_callable=AsyncMock) as mock_run:
+            with patch.object(DocumentationMCPServer, "initialize", new_callable=AsyncMock):
                 await serve(config)
 
                 # Verify run was called

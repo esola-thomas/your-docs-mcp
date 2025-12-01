@@ -84,7 +84,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
   "mcpServers": {
     "hierarchical-docs": {
       "command": "python",
-      "args": ["-m", "hierarchical_docs_mcp"],
+      "args": ["-m", "docs_mcp"],
       "env": {
         "DOCS_ROOT": "/Users/yourname/my-docs"
       }
@@ -104,7 +104,7 @@ Create `.vscode/mcp.json` in your workspace:
   "servers": {
     "hierarchical-docs": {
       "command": "python",
-      "args": ["-m", "hierarchical_docs_mcp"],
+      "args": ["-m", "docs_mcp"],
       "env": {
         "DOCS_ROOT": "${workspaceFolder}/docs"
       }
@@ -286,7 +286,7 @@ Check MCP server logs in Claude Desktop:
 Use MCP Inspector for debugging:
 
 ```bash
-npx @modelcontextprotocol/inspector python -m hierarchical_docs_mcp
+npx @modelcontextprotocol/inspector python -m docs_mcp
 ```
 
 Opens web UI to test tools interactively.

@@ -5,15 +5,15 @@ from unittest.mock import patch
 
 import pytest
 
-from hierarchical_docs_mcp.handlers.tools import (
+from docs_mcp.handlers.tools import (
     handle_get_document,
     handle_get_table_of_contents,
     handle_navigate_to,
     handle_search_by_tags,
     handle_search_documentation,
 )
-from hierarchical_docs_mcp.models.document import Document
-from hierarchical_docs_mcp.models.navigation import Category
+from docs_mcp.models.document import Document
+from docs_mcp.models.navigation import Category
 
 
 class TestHandleSearchDocumentation:
@@ -96,9 +96,7 @@ class TestHandleSearchDocumentation:
         assert "match_type" in result
 
     @pytest.mark.asyncio
-    async def test_search_with_category_filter(
-        self, sample_documents, sample_categories
-    ):
+    async def test_search_with_category_filter(self, sample_documents, sample_categories):
         """Test searching with category filter."""
         arguments = {"query": "guide", "category": "guides"}
 
@@ -124,9 +122,7 @@ class TestHandleSearchDocumentation:
         """Test search uses default limit when not specified."""
         arguments = {"query": "test"}
 
-        with patch(
-            "hierarchical_docs_mcp.handlers.tools.search_content"
-        ) as mock_search:
+        with patch("docs_mcp.handlers.tools.search_content") as mock_search:
             mock_search.return_value = []
             await handle_search_documentation(
                 arguments, sample_documents, sample_categories, search_limit=5
@@ -164,9 +160,7 @@ class TestHandleSearchDocumentation:
         """Test search handles exceptions gracefully."""
         arguments = {"query": "test"}
 
-        with patch(
-            "hierarchical_docs_mcp.handlers.tools.search_content"
-        ) as mock_search:
+        with patch("docs_mcp.handlers.tools.search_content") as mock_search:
             mock_search.side_effect = Exception("Search error")
 
             results = await handle_search_documentation(
@@ -229,9 +223,7 @@ class TestHandleNavigateTo:
         """Test navigating to a URI."""
         arguments = {"uri": "docs://guides"}
 
-        result = await handle_navigate_to(
-            arguments, sample_documents, sample_categories
-        )
+        result = await handle_navigate_to(arguments, sample_documents, sample_categories)
 
         assert "current_uri" in result
         assert result["current_uri"] == "docs://guides"
@@ -245,9 +237,7 @@ class TestHandleNavigateTo:
         """Test navigation result has correct format."""
         arguments = {"uri": "docs://guides"}
 
-        result = await handle_navigate_to(
-            arguments, sample_documents, sample_categories
-        )
+        result = await handle_navigate_to(arguments, sample_documents, sample_categories)
 
         assert "current_uri" in result
         assert "current_type" in result
@@ -262,9 +252,7 @@ class TestHandleNavigateTo:
         """Test navigating with empty URI."""
         arguments = {"uri": ""}
 
-        result = await handle_navigate_to(
-            arguments, sample_documents, sample_categories
-        )
+        result = await handle_navigate_to(arguments, sample_documents, sample_categories)
 
         # Should default to root or handle gracefully
         assert isinstance(result, dict)
@@ -274,27 +262,19 @@ class TestHandleNavigateTo:
         """Test navigating without URI parameter."""
         arguments = {}
 
-        result = await handle_navigate_to(
-            arguments, sample_documents, sample_categories
-        )
+        result = await handle_navigate_to(arguments, sample_documents, sample_categories)
 
         assert isinstance(result, dict)
 
     @pytest.mark.asyncio
-    async def test_navigate_handles_exception(
-        self, sample_documents, sample_categories
-    ):
+    async def test_navigate_handles_exception(self, sample_documents, sample_categories):
         """Test navigation handles exceptions gracefully."""
         arguments = {"uri": "docs://invalid"}
 
-        with patch(
-            "hierarchical_docs_mcp.handlers.tools.navigate_to_uri"
-        ) as mock_navigate:
+        with patch("docs_mcp.handlers.tools.navigate_to_uri") as mock_navigate:
             mock_navigate.side_effect = Exception("Navigation error")
 
-            result = await handle_navigate_to(
-                arguments, sample_documents, sample_categories
-            )
+            result = await handle_navigate_to(arguments, sample_documents, sample_categories)
 
             assert "error" in result
             assert "Navigation error" in result["error"]
@@ -341,9 +321,7 @@ class TestHandleGetTableOfContents:
         """Test getting table of contents."""
         arguments = {}
 
-        result = await handle_get_table_of_contents(
-            arguments, sample_documents, sample_categories
-        )
+        result = await handle_get_table_of_contents(arguments, sample_documents, sample_categories)
 
         assert isinstance(result, dict)
 
@@ -352,9 +330,7 @@ class TestHandleGetTableOfContents:
         """Test getting table of contents with max_depth."""
         arguments = {"max_depth": 2}
 
-        result = await handle_get_table_of_contents(
-            arguments, sample_documents, sample_categories
-        )
+        result = await handle_get_table_of_contents(arguments, sample_documents, sample_categories)
 
         assert isinstance(result, dict)
 
@@ -363,9 +339,7 @@ class TestHandleGetTableOfContents:
         """Test getting table of contents without max_depth."""
         arguments = {}
 
-        result = await handle_get_table_of_contents(
-            arguments, sample_documents, sample_categories
-        )
+        result = await handle_get_table_of_contents(arguments, sample_documents, sample_categories)
 
         assert isinstance(result, dict)
 
@@ -374,9 +348,7 @@ class TestHandleGetTableOfContents:
         """Test table of contents handles exceptions gracefully."""
         arguments = {}
 
-        with patch(
-            "hierarchical_docs_mcp.handlers.tools.get_table_of_contents"
-        ) as mock_toc:
+        with patch("docs_mcp.handlers.tools.get_table_of_contents") as mock_toc:
             mock_toc.side_effect = Exception("TOC error")
 
             result = await handle_get_table_of_contents(
@@ -423,9 +395,7 @@ class TestHandleSearchByTags:
         """Test searching by tags."""
         arguments = {"tags": ["tutorial"]}
 
-        results = await handle_search_by_tags(
-            arguments, sample_documents, search_limit=10
-        )
+        results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
 
         assert isinstance(results, list)
         assert len(results) > 0
@@ -435,9 +405,7 @@ class TestHandleSearchByTags:
         """Test search by tags result format."""
         arguments = {"tags": ["tutorial"]}
 
-        results = await handle_search_by_tags(
-            arguments, sample_documents, search_limit=10
-        )
+        results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
 
         assert len(results) > 0
         result = results[0]
@@ -453,9 +421,7 @@ class TestHandleSearchByTags:
         """Test searching by tags with category filter."""
         arguments = {"tags": ["tutorial"], "category": "guides"}
 
-        results = await handle_search_by_tags(
-            arguments, sample_documents, search_limit=10
-        )
+        results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
 
         assert isinstance(results, list)
 
@@ -464,9 +430,7 @@ class TestHandleSearchByTags:
         """Test searching by tags with limit."""
         arguments = {"tags": ["tutorial"], "limit": 1}
 
-        results = await handle_search_by_tags(
-            arguments, sample_documents, search_limit=10
-        )
+        results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
 
         assert len(results) <= 1
 
@@ -475,9 +439,7 @@ class TestHandleSearchByTags:
         """Test search by tags uses default limit."""
         arguments = {"tags": ["tutorial"]}
 
-        with patch(
-            "hierarchical_docs_mcp.handlers.tools.search_by_metadata"
-        ) as mock_search:
+        with patch("docs_mcp.handlers.tools.search_by_metadata") as mock_search:
             mock_search.return_value = []
             await handle_search_by_tags(arguments, sample_documents, search_limit=5)
 
@@ -490,9 +452,7 @@ class TestHandleSearchByTags:
         """Test searching with empty tags list."""
         arguments = {"tags": []}
 
-        results = await handle_search_by_tags(
-            arguments, sample_documents, search_limit=10
-        )
+        results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
 
         assert isinstance(results, list)
 
@@ -501,9 +461,7 @@ class TestHandleSearchByTags:
         """Test searching without tags parameter."""
         arguments = {}
 
-        results = await handle_search_by_tags(
-            arguments, sample_documents, search_limit=10
-        )
+        results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
 
         assert isinstance(results, list)
 
@@ -512,14 +470,10 @@ class TestHandleSearchByTags:
         """Test search by tags handles exceptions gracefully."""
         arguments = {"tags": ["test"]}
 
-        with patch(
-            "hierarchical_docs_mcp.handlers.tools.search_by_metadata"
-        ) as mock_search:
+        with patch("docs_mcp.handlers.tools.search_by_metadata") as mock_search:
             mock_search.side_effect = Exception("Tag search error")
 
-            results = await handle_search_by_tags(
-                arguments, sample_documents, search_limit=10
-            )
+            results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
 
             assert isinstance(results, list)
             assert len(results) > 0
@@ -611,7 +565,7 @@ class TestHandleGetDocument:
         """Test get document handles exceptions gracefully."""
         arguments = {"uri": "docs://test"}
 
-        with patch("hierarchical_docs_mcp.handlers.tools.logger"):
+        with patch("docs_mcp.handlers.tools.logger"):
             # Simulate exception by making sample_documents invalid
             result = await handle_get_document(arguments, None)
 

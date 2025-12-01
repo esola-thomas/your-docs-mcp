@@ -27,7 +27,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           pytest tests/ \
-            --cov=hierarchical_docs_mcp \
+            --cov=docs_mcp \
             --cov-report=term-missing \
             --cov-report=html \
             --cov-report=xml \

@@ -1,4 +1,4 @@
-# Hierarchical Documentation MCP Server
+# Documentation MCP Server
 
 A Model Context Protocol (MCP) server that enables AI assistants to navigate and query documentation through hierarchical structures, supporting markdown files with YAML frontmatter and OpenAPI 3.x specifications.
 
@@ -18,8 +18,8 @@ A Model Context Protocol (MCP) server that enables AI assistants to navigate and
 ### Installation
 
 ```bash
-# Install from PyPI (when published)
-pip install hierarchical-docs-mcp
+# Install from PyPI
+pip install docs-mcp
 
 # Or install from source
 git clone https://github.com/esola-thomas/Markdown-MCP
@@ -38,7 +38,7 @@ export DOCS_ROOT=/path/to/your/docs
 2. Start the MCP server:
 
 ```bash
-hierarchical-docs-mcp
+docs-mcp
 ```
 
 ### Claude Desktop Configuration
@@ -49,7 +49,7 @@ Add to your Claude Desktop configuration file (`~/Library/Application Support/Cl
 {
   "mcpServers": {
     "docs": {
-      "command": "hierarchical-docs-mcp",
+      "command": "docs-mcp",
       "env": {
         "DOCS_ROOT": "/absolute/path/to/your/docs"
       }
@@ -66,7 +66,7 @@ Create `.vscode/mcp.json` in your workspace:
 {
   "servers": {
     "docs": {
-      "command": "hierarchical-docs-mcp",
+      "command": "docs-mcp",
       "env": {
         "DOCS_ROOT": "${workspaceFolder}/docs"
       }
@@ -86,7 +86,7 @@ This repository includes a complete example documentation structure in the [`exa
 export DOCS_ROOT=/path/to/Markdown-MCP/example
 
 # Start the server
-hierarchical-docs-mcp
+docs-mcp
 ```
 
 The example includes:
@@ -262,10 +262,10 @@ pip install -e ".[dev]"
 pytest
 
 # Run type checking
-mypy hierarchical_docs_mcp
+mypy docs_mcp
 
 # Run linting
-ruff check hierarchical_docs_mcp
+ruff check docs_mcp
 ```
 
 ### Running Tests
@@ -280,13 +280,13 @@ pytest -m integration
 pytest -m contract
 
 # Run with coverage
-pytest --cov=hierarchical_docs_mcp --cov-report=html
+pytest --cov=docs_mcp --cov-report=html
 ```
 
 ## Architecture
 
 ```
-hierarchical_docs_mcp/
+docs_mcp/
 ├── models/          # Data models (Document, Category, OpenAPI entities)
 ├── handlers/        # MCP protocol handlers (tools, resources)
 ├── services/        # Business logic (markdown parsing, search, hierarchy)

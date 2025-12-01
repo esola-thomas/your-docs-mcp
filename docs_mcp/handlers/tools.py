@@ -2,14 +2,14 @@
 
 from typing import Any
 
-from hierarchical_docs_mcp.models.document import Document
-from hierarchical_docs_mcp.models.navigation import Category
-from hierarchical_docs_mcp.services.hierarchy import (
+from docs_mcp.models.document import Document
+from docs_mcp.models.navigation import Category
+from docs_mcp.services.hierarchy import (
     get_table_of_contents,
     navigate_to_uri,
 )
-from hierarchical_docs_mcp.services.search import search_by_metadata, search_content
-from hierarchical_docs_mcp.utils.logger import logger
+from docs_mcp.services.search import search_by_metadata, search_content
+from docs_mcp.utils.logger import logger
 
 
 async def handle_search_documentation(
@@ -163,9 +163,7 @@ async def handle_search_by_tags(
                 "excerpt": result.excerpt,
                 "breadcrumbs": result.breadcrumb_string,
                 "category": result.category,
-                "tags": [
-                    doc.tags for doc in documents if doc.uri == result.document_uri
-                ][0],
+                "tags": [doc.tags for doc in documents if doc.uri == result.document_uri][0],
             }
             for result in results
         ]

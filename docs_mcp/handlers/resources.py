@@ -2,9 +2,9 @@
 
 from typing import Any
 
-from hierarchical_docs_mcp.models.document import Document
-from hierarchical_docs_mcp.models.navigation import Category
-from hierarchical_docs_mcp.utils.logger import logger
+from docs_mcp.models.document import Document
+from docs_mcp.models.navigation import Category
+from docs_mcp.utils.logger import logger
 
 
 async def handle_resource_read(

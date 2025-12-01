@@ -2,10 +2,10 @@
 
 from typing import Any, cast
 
-from hierarchical_docs_mcp.models.document import Document
-from hierarchical_docs_mcp.models.navigation import Category, NavigationContext
-from hierarchical_docs_mcp.services.cache import get_cache
-from hierarchical_docs_mcp.utils.logger import logger
+from docs_mcp.models.document import Document
+from docs_mcp.models.navigation import Category, NavigationContext
+from docs_mcp.services.cache import get_cache
+from docs_mcp.utils.logger import logger
 
 
 class HierarchyError(Exception):
@@ -49,10 +49,7 @@ def build_category_tree(
                 # Create category
                 category = Category(
                     name=category_parts[-1],
-                    label=category_parts[-1]
-                    .replace("-", " ")
-                    .replace("_", " ")
-                    .title(),
+                    label=category_parts[-1].replace("-", " ").replace("_", " ").title(),
                     uri=category_uri,
                     parent_uri=parent_uri,
                     depth=depth,
@@ -263,9 +260,7 @@ def _get_category_context(
         parent_uri=parent_uri,
         breadcrumbs=category.breadcrumbs,
         children=children,
-        sibling_count=len(
-            [c for c in categories.values() if c.parent_uri == category.parent_uri]
-        ),
+        sibling_count=len([c for c in categories.values() if c.parent_uri == category.parent_uri]),
         navigation_options=options,
     )
 
@@ -373,9 +368,7 @@ def _build_toc_node(
         for child_uri in category.child_categories:
             if child_uri in categories:
                 child_cat = categories[child_uri]
-                children.append(
-                    _build_toc_node(child_cat, categories, documents, max_depth)
-                )
+                children.append(_build_toc_node(child_cat, categories, documents, max_depth))
 
     # Add child documents only if within max_depth
     if max_depth is None or category.depth + 1 < max_depth:

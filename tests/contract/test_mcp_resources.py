@@ -5,12 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from hierarchical_docs_mcp.handlers.resources import (
+from docs_mcp.handlers.resources import (
     handle_resource_read,
     list_resources,
 )
-from hierarchical_docs_mcp.models.document import Document
-from hierarchical_docs_mcp.services.hierarchy import build_category_tree
+from docs_mcp.models.document import Document
+from docs_mcp.services.hierarchy import build_category_tree
 
 
 @pytest.fixture
@@ -133,9 +133,7 @@ class TestResourceRead:
         assert "#" in result["text"]  # Should have markdown heading
 
     @pytest.mark.asyncio
-    async def test_read_category_lists_subcategories(
-        self, sample_documents, categories
-    ):
+    async def test_read_category_lists_subcategories(self, sample_documents, categories):
         """Test that category resource lists subcategories."""
         # Add a document in a nested category
         nested_doc = Document(
@@ -194,9 +192,7 @@ class TestListResources:
         assert "description" in root or "mimeType" in root
 
     @pytest.mark.asyncio
-    async def test_list_resources_includes_categories(
-        self, sample_documents, categories
-    ):
+    async def test_list_resources_includes_categories(self, sample_documents, categories):
         """Test that resource list includes categories."""
         result = await list_resources(sample_documents, categories)
 
@@ -205,16 +201,12 @@ class TestListResources:
         assert guides is not None
 
     @pytest.mark.asyncio
-    async def test_list_resources_includes_documents(
-        self, sample_documents, categories
-    ):
+    async def test_list_resources_includes_documents(self, sample_documents, categories):
         """Test that resource list includes documents."""
         result = await list_resources(sample_documents, categories)
 
         # Should have getting-started document
-        doc = next(
-            (r for r in result if r["uri"] == "docs://guides/getting-started"), None
-        )
+        doc = next((r for r in result if r["uri"] == "docs://guides/getting-started"), None)
         assert doc is not None
 
     @pytest.mark.asyncio
@@ -247,9 +239,7 @@ class TestResourceContract:
     """Test MCP resource contract compliance."""
 
     @pytest.mark.asyncio
-    async def test_document_resource_has_required_fields(
-        self, sample_documents, categories
-    ):
+    async def test_document_resource_has_required_fields(self, sample_documents, categories):
         """Test that document resources have all required fields."""
         uri = "docs://guides/getting-started"
 
@@ -262,9 +252,7 @@ class TestResourceContract:
                 assert field in result, f"Missing required field: {field}"
 
     @pytest.mark.asyncio
-    async def test_category_resource_has_required_fields(
-        self, sample_documents, categories
-    ):
+    async def test_category_resource_has_required_fields(self, sample_documents, categories):
         """Test that category resources have all required fields."""
         uri = "docs://guides"
 
@@ -291,9 +279,7 @@ class TestResourceContract:
             pytest.fail(f"Document resource is not JSON serializable: {doc_result}")
 
         # Test category resource
-        cat_result = await handle_resource_read(
-            "docs://guides", sample_documents, categories
-        )
+        cat_result = await handle_resource_read("docs://guides", sample_documents, categories)
         try:
             json.dumps(cat_result)
         except (TypeError, ValueError):
@@ -312,14 +298,10 @@ class TestResourceContract:
         result = await list_resources(sample_documents, categories)
 
         for resource in result:
-            assert resource["uri"].startswith("docs://") or resource["uri"].startswith(
-                "api://"
-            )
+            assert resource["uri"].startswith("docs://") or resource["uri"].startswith("api://")
 
     @pytest.mark.asyncio
-    async def test_resource_names_are_human_readable(
-        self, sample_documents, categories
-    ):
+    async def test_resource_names_are_human_readable(self, sample_documents, categories):
         """Test that resource names are human-readable."""
         result = await list_resources(sample_documents, categories)
 
@@ -375,9 +357,7 @@ class TestResourceEdgeCases:
         assert result["uri"] == "docs://empty"
 
     @pytest.mark.asyncio
-    async def test_read_with_special_characters_in_uri(
-        self, sample_documents, categories
-    ):
+    async def test_read_with_special_characters_in_uri(self, sample_documents, categories):
         """Test reading resources with special characters in URI."""
         special_doc = Document(
             file_path=Path("/docs/test-doc_name.md"),
@@ -389,9 +369,7 @@ class TestResourceEdgeCases:
             size_bytes=50,
         )
 
-        result = await handle_resource_read(
-            "docs://test-doc_name", [special_doc], categories
-        )
+        result = await handle_resource_read("docs://test-doc_name", [special_doc], categories)
 
         assert "uri" in result
         assert result["uri"] == "docs://test-doc_name"
@@ -405,9 +383,7 @@ class TestResourceEdgeCases:
         assert isinstance(result, list)
 
     @pytest.mark.asyncio
-    async def test_resource_metadata_datetime_serialization(
-        self, sample_documents, categories
-    ):
+    async def test_resource_metadata_datetime_serialization(self, sample_documents, categories):
         """Test that datetime in metadata is properly serialized."""
         uri = "docs://guides/getting-started"
 
@@ -427,9 +403,7 @@ class TestResourceCaching:
     """Test resource caching behavior."""
 
     @pytest.mark.asyncio
-    async def test_repeated_reads_return_consistent_data(
-        self, sample_documents, categories
-    ):
+    async def test_repeated_reads_return_consistent_data(self, sample_documents, categories):
         """Test that repeated reads return consistent data."""
         uri = "docs://guides/getting-started"
 

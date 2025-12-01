@@ -3,7 +3,7 @@
 import time
 from datetime import UTC, datetime, timedelta
 
-from hierarchical_docs_mcp.services.cache import Cache, CacheEntry, get_cache
+from docs_mcp.services.cache import Cache, CacheEntry, get_cache
 
 
 class TestCacheEntry:
