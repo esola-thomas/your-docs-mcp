@@ -73,7 +73,8 @@ class ServerConfig(BaseSettings):
     audit_log: bool = True
 
     # Web server configuration
-    enable_web_server: bool = True
+    # Default to False for MCP safety - use your-docs-web or your-docs-server for web access
+    enable_web_server: bool = False
     web_host: str = "127.0.0.1"
     web_port: int = 8123
 

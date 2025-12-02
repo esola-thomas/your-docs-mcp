@@ -1,16 +1,12 @@
 {
   "mcpServers": {
     "docs": {
-      "command": "python",
-      "args": [
-        "-m",
-        "docs_mcp"
-      ],
+      "command": "your-docs-mcp",
       "env": {
         "DOCS_ROOT": "/absolute/path/to/your/docs",
         "MCP_DOCS_CACHE_TTL": "3600",
         "MCP_DOCS_SEARCH_LIMIT": "10",
-        "LOG_LEVEL": "INFO"
+        "MCP_DOCS_LOG_LEVEL": "INFO"
       }
     }
   }

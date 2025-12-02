@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "your-docs-mcp"
-version = "0.0.0"
+version = "0.0.1"
 description = "Model Context Protocol server for hierarchical documentation navigation with markdown and OpenAPI support"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 authors = [
     {name = "MCP Contributors"}
 ]
@@ -48,7 +48,9 @@ dev = [
 ]
 
 [project.scripts]
-your-docs-mcp = "docs_mcp.__main__:main"
+your-docs-mcp = "docs_mcp.__main__:mcp_main"
+your-docs-web = "docs_mcp.__main__:web_main"
+your-docs-server = "docs_mcp.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/esola-thomas/Markdown-MCP"
@@ -60,6 +62,7 @@ include = ["docs_mcp*"]
 
 [tool.setuptools.package-data]
 docs_mcp = ["py.typed", "static/*"]
+"*" = ["py.typed", "static/*"]
 
 [tool.ruff]
 line-length = 100

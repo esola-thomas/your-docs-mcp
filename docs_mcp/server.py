@@ -257,7 +257,14 @@ async def serve_both(config: ServerConfig) -> None:
 
     Args:
         config: Server configuration
+        
+    Note:
+        When running both servers, uvicorn logging is suppressed to prevent
+        stdout pollution that could interfere with MCP stdio protocol.
     """
+    import logging
+    import sys
+
     import uvicorn
 
     from docs_mcp.web import DocumentationWebServer
@@ -283,12 +290,37 @@ async def serve_both(config: ServerConfig) -> None:
             categories=mcp_server.categories,
         )
 
-        # Configure uvicorn
+        # Configure uvicorn to NOT output to stdout (would break MCP protocol)
+        # All uvicorn logging goes to stderr via custom log config
+        log_config = {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {
+                "default": {
+                    "fmt": "%(levelprefix)s %(message)s",
+                    "use_colors": False,
+                },
+            },
+            "handlers": {
+                "stderr": {
+                    "formatter": "default",
+                    "class": "logging.StreamHandler",
+                    "stream": "ext://sys.stderr",
+                },
+            },
+            "loggers": {
+                "uvicorn": {"handlers": ["stderr"], "level": "WARNING", "propagate": False},
+                "uvicorn.error": {"handlers": ["stderr"], "level": "WARNING", "propagate": False},
+                "uvicorn.access": {"handlers": ["stderr"], "level": "WARNING", "propagate": False},
+            },
+        }
+
         uvicorn_config = uvicorn.Config(
             app=web_server.app,
             host=config.web_host,
             port=config.web_port,
-            log_level=config.log_level.lower(),
+            log_config=log_config,
+            access_log=False,  # Disable access logging to prevent stdout pollution
         )
 
         # Create and run uvicorn server
@@ -297,3 +329,41 @@ async def serve_both(config: ServerConfig) -> None:
 
     # Wait for both servers
     await asyncio.gather(*tasks)
+
+
+async def serve_web_only(config: ServerConfig) -> None:
+    """Create and run web server only (no MCP stdio server).
+
+    Args:
+        config: Server configuration
+        
+    This is useful for standalone documentation browsing or REST API access
+    without running the MCP protocol server.
+    """
+    import uvicorn
+
+    from docs_mcp.web import DocumentationWebServer
+
+    # Create MCP server just to initialize documents (but don't run stdio)
+    mcp_server = DocumentationMCPServer(config)
+    await mcp_server.initialize()
+
+    # Create web server with shared document state
+    web_server = DocumentationWebServer(
+        config=config,
+        documents=mcp_server.documents,
+        categories=mcp_server.categories,
+    )
+
+    logger.info(f"Starting web server on {config.web_host}:{config.web_port}")
+
+    # Standard uvicorn config for web-only mode (can use stdout normally)
+    uvicorn_config = uvicorn.Config(
+        app=web_server.app,
+        host=config.web_host,
+        port=config.web_port,
+        log_level=config.log_level.lower(),
+    )
+
+    uvicorn_server = uvicorn.Server(uvicorn_config)
+    await uvicorn_server.serve()
