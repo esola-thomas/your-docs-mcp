@@ -261,29 +261,18 @@ async def serve_both(config: ServerConfig) -> None:
     Note:
         When running both servers, uvicorn logging is suppressed to prevent
         stdout pollution that could interfere with MCP stdio protocol.
+        The web server starts first, then MCP stdio server runs in parallel.
     """
-    import logging
-    import sys
-
     import uvicorn
 
     from docs_mcp.web import DocumentationWebServer
 
-    # Create and initialize MCP server
+    # Create and initialize MCP server (loads documents)
     mcp_server = DocumentationMCPServer(config)
     await mcp_server.initialize()
 
-    # Create tasks for both servers
-    tasks = []
-
-    # Add MCP server task
-    tasks.append(asyncio.create_task(mcp_server.run()))
-
-    # Add web server task if enabled
-    if config.enable_web_server:
-        logger.info(f"Starting web server on {config.web_host}:{config.web_port}")
-
-        # Create web server
+    async def run_web_server() -> None:
+        """Run the web server."""
         web_server = DocumentationWebServer(
             config=config,
             documents=mcp_server.documents,
@@ -323,11 +312,26 @@ async def serve_both(config: ServerConfig) -> None:
             access_log=False,  # Disable access logging to prevent stdout pollution
         )
 
-        # Create and run uvicorn server
         uvicorn_server = uvicorn.Server(uvicorn_config)
-        tasks.append(asyncio.create_task(uvicorn_server.serve()))
+        await uvicorn_server.serve()
 
-    # Wait for both servers
+    async def run_mcp_server() -> None:
+        """Run the MCP stdio server."""
+        await mcp_server.run()
+
+    # Create tasks - web server first so it binds the port before MCP blocks on stdio
+    tasks = []
+
+    if config.enable_web_server:
+        logger.info(f"Starting web server on {config.web_host}:{config.web_port}")
+        tasks.append(asyncio.create_task(run_web_server()))
+        # Give web server time to bind the port
+        await asyncio.sleep(0.1)
+
+    # Add MCP server task
+    tasks.append(asyncio.create_task(run_mcp_server()))
+
+    # Wait for all servers (will run until interrupted)
     await asyncio.gather(*tasks)
 
 

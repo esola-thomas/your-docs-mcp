@@ -1,16 +1,23 @@
-"""Web server for documentation browsing."""
+"""Web server for documentation browsing with MCP SSE transport support."""
 
+import json
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from mcp.server import Server
+from mcp.server.sse import SseServerTransport
+from mcp.types import Resource, Tool
 from pydantic import BaseModel
+from starlette.applications import Starlette
+from starlette.responses import Response as StarletteResponse
+from starlette.routing import Mount, Route
 
 from docs_mcp.config import ServerConfig
-from docs_mcp.handlers import tools
+from docs_mcp.handlers import resources, tools
 from docs_mcp.models.document import Document
 from docs_mcp.models.navigation import Category
 from docs_mcp.utils.logger import logger
@@ -51,7 +58,16 @@ class GetDocumentRequest(BaseModel):
 
 
 class DocumentationWebServer:
-    """Web server for documentation browsing."""
+    """Web server for documentation browsing with MCP SSE transport support.
+    
+    This server provides:
+    - REST API endpoints for documentation browsing
+    - Static file serving for the web UI
+    - MCP protocol support via SSE transport (GET /sse, POST /messages/)
+    
+    The MCP SSE transport allows AI clients (like VS Code) to connect via HTTP
+    instead of stdio, enabling web-based MCP communication.
+    """
 
     def __init__(
         self,
@@ -69,19 +85,28 @@ class DocumentationWebServer:
         self.config = config
         self.documents = documents
         self.categories = categories
+        
+        # Create the MCP server for SSE transport
+        self.mcp_server = Server("hierarchical-docs-mcp")
+        self._register_mcp_handlers()
+        
+        # Create SSE transport - messages will be posted to /messages/
+        self.sse_transport = SseServerTransport("/messages/")
+        
         self.app = FastAPI(
             title="Markdown MCP Documentation",
-            description="Web interface for browsing documentation",
+            description="Web interface for browsing documentation with MCP SSE support",
             version="0.1.0",
         )
 
-        # Add CORS middleware
+        # Add CORS middleware - important for MCP clients
         self.app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
+            expose_headers=["*"],
         )
 
         # Mount static files
@@ -89,6 +114,208 @@ class DocumentationWebServer:
         self.app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
         self._register_routes()
+        self._register_mcp_sse_routes()
+
+    def _register_mcp_handlers(self) -> None:
+        """Register MCP protocol handlers for SSE transport."""
+        
+        @self.mcp_server.list_tools()
+        async def list_tools() -> list[Tool]:
+            """List available tools."""
+            return [
+                Tool(
+                    name="search_documentation",
+                    description=(
+                        "Search documentation with full-text search. "
+                        "Returns results with hierarchical context (breadcrumbs)."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Search query string",
+                            },
+                            "category": {
+                                "type": "string",
+                                "description": "Optional category to filter results",
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "description": "Maximum number of results (default: 10)",
+                                "default": 10,
+                            },
+                        },
+                        "required": ["query"],
+                    },
+                ),
+                Tool(
+                    name="navigate_to",
+                    description=(
+                        "Navigate to a specific URI in the documentation hierarchy. "
+                        "Returns navigation context with parent, children, and breadcrumbs."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "uri": {
+                                "type": "string",
+                                "description": "URI to navigate to (e.g., 'docs://guides/security')",
+                            },
+                        },
+                        "required": ["uri"],
+                    },
+                ),
+                Tool(
+                    name="get_table_of_contents",
+                    description=(
+                        "Get the complete documentation hierarchy as a table of contents tree."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "max_depth": {
+                                "type": "integer",
+                                "description": "Maximum depth to include (optional)",
+                            },
+                        },
+                    },
+                ),
+                Tool(
+                    name="search_by_tags",
+                    description="Search documentation by metadata tags and category.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "tags": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Tags to search for (OR logic)",
+                            },
+                            "category": {
+                                "type": "string",
+                                "description": "Category to filter by",
+                            },
+                            "limit": {
+                                "type": "integer",
+                                "description": "Maximum results",
+                                "default": 10,
+                            },
+                        },
+                        "required": ["tags"],
+                    },
+                ),
+                Tool(
+                    name="get_document",
+                    description="Get full content and metadata for a specific document by URI.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "uri": {
+                                "type": "string",
+                                "description": "Document URI (e.g., 'docs://guides/getting-started')",
+                            },
+                        },
+                        "required": ["uri"],
+                    },
+                ),
+            ]
+
+        @self.mcp_server.call_tool()
+        async def call_tool(name: str, arguments: Any) -> list[Any]:
+            """Handle tool calls."""
+            logger.info(f"MCP SSE Tool call: {name}")
+
+            if name == "search_documentation":
+                results = await tools.handle_search_documentation(
+                    arguments, self.documents, self.categories, self.config.search_limit
+                )
+                return [{"type": "text", "text": json.dumps(results, indent=2)}]
+
+            elif name == "navigate_to":
+                result = await tools.handle_navigate_to(arguments, self.documents, self.categories)
+                return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+            elif name == "get_table_of_contents":
+                result = await tools.handle_get_table_of_contents(
+                    arguments, self.documents, self.categories
+                )
+                return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+            elif name == "search_by_tags":
+                results = await tools.handle_search_by_tags(
+                    arguments, self.documents, self.config.search_limit
+                )
+                return [{"type": "text", "text": json.dumps(results, indent=2)}]
+
+            elif name == "get_document":
+                result = await tools.handle_get_document(arguments, self.documents)
+                return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+            else:
+                raise ValueError(f"Unknown tool: {name}")
+
+        @self.mcp_server.list_resources()
+        async def list_resources() -> list[Resource]:
+            """List available resources."""
+            resource_list = await resources.list_resources(self.documents, self.categories)
+            return [
+                Resource(
+                    uri=r["uri"],
+                    name=r["name"],
+                    mimeType=r.get("mimeType", "text/markdown"),
+                    description=r.get("description"),
+                )
+                for r in resource_list
+            ]
+
+        @self.mcp_server.read_resource()
+        async def read_resource(uri: str) -> str:
+            """Read a resource by URI."""
+            from typing import cast
+            result = await resources.handle_resource_read(uri, self.documents, self.categories)
+
+            if "error" in result:
+                raise ValueError(result["error"])
+
+            return cast(str, result.get("text", ""))
+
+    def _register_mcp_sse_routes(self) -> None:
+        """Register MCP SSE transport routes."""
+
+        async def sse_endpoint(request: Request) -> StarletteResponse:
+            """SSE endpoint for MCP clients.
+            
+            Clients connect here to establish an SSE stream for receiving
+            server messages. The server sends an 'endpoint' event with the
+            URL to POST messages to.
+            """
+            logger.info("MCP SSE client connecting...")
+            
+            async with self.sse_transport.connect_sse(
+                request.scope, 
+                request.receive, 
+                request._send  # type: ignore[arg-type]
+            ) as streams:
+                await self.mcp_server.run(
+                    streams[0],
+                    streams[1],
+                    self.mcp_server.create_initialization_options(),
+                )
+            
+            return StarletteResponse()
+
+        # The SSE transport handles POST /messages/?session_id=...
+        sse_routes_app = Starlette(
+            routes=[
+                Route("/sse", endpoint=sse_endpoint, methods=["GET"]),
+                Mount("/messages/", app=self.sse_transport.handle_post_message),
+            ]
+        )
+
+        # Prepend SSE routes so they're matched before static mounts
+        for route in reversed(sse_routes_app.routes):
+            self.app.router.routes.insert(0, route)
 
     def _register_routes(self) -> None:
         """Register API routes."""
