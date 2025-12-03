@@ -209,3 +209,57 @@ async def handle_get_document(
     except Exception as e:
         logger.error(f"Get document failed: {e}")
         return {"error": str(e)}
+
+
+async def handle_get_all_tags(
+    arguments: dict[str, Any],
+    documents: list[Document],
+) -> dict[str, Any]:
+    """Handle get_all_tags tool request.
+
+    Collects all unique tags from documents with optional frequency counts.
+
+    Args:
+        arguments: Tool arguments containing optional 'category' filter
+                   and 'include_counts' boolean
+        documents: All documents
+
+    Returns:
+        Dictionary with 'tags' list, 'count' total, and optionally
+        'tag_counts' with frequency information
+    """
+    category = arguments.get("category")
+    include_counts = arguments.get("include_counts", False)
+
+    logger.info(f"Get all tags request: category={category}, include_counts={include_counts}")
+
+    try:
+        tag_frequency: dict[str, int] = {}
+
+        for doc in documents:
+            # Apply category filter if specified
+            if category and doc.category != category:
+                continue
+
+            for tag in doc.tags:
+                tag_frequency[tag] = tag_frequency.get(tag, 0) + 1
+
+        # Sort tags alphabetically
+        sorted_tags = sorted(tag_frequency.keys())
+
+        result: dict[str, Any] = {
+            "tags": sorted_tags,
+            "count": len(sorted_tags),
+        }
+
+        if include_counts:
+            result["tag_counts"] = [
+                {"tag": tag, "document_count": tag_frequency[tag]}
+                for tag in sorted_tags
+            ]
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Get all tags failed: {e}")
+        return {"error": str(e)}

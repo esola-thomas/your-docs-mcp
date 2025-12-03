@@ -137,6 +137,27 @@ class DocumentationMCPServer:
                         "required": ["uri"],
                     },
                 ),
+                Tool(
+                    name="get_all_tags",
+                    description=(
+                        "Get a list of all unique tags defined across the documentation. "
+                        "Optionally filter by category and include document counts per tag."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "category": {
+                                "type": "string",
+                                "description": "Optional category to filter tags from",
+                            },
+                            "include_counts": {
+                                "type": "boolean",
+                                "description": "Include document count for each tag (default: false)",
+                                "default": False,
+                            },
+                        },
+                    },
+                ),
             ]
 
         @self.server.call_tool()
@@ -168,6 +189,10 @@ class DocumentationMCPServer:
 
             elif name == "get_document":
                 result = await tools.handle_get_document(arguments, self.documents)
+                return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+            elif name == "get_all_tags":
+                result = await tools.handle_get_all_tags(arguments, self.documents)
                 return [{"type": "text", "text": json.dumps(result, indent=2)}]
 
             else:
@@ -257,7 +282,7 @@ async def serve_both(config: ServerConfig) -> None:
 
     Args:
         config: Server configuration
-        
+
     Note:
         When running both servers, uvicorn logging is suppressed to prevent
         stdout pollution that could interfere with MCP stdio protocol.
@@ -340,7 +365,7 @@ async def serve_web_only(config: ServerConfig) -> None:
 
     Args:
         config: Server configuration
-        
+
     This is useful for standalone documentation browsing or REST API access
     without running the MCP protocol server.
     """

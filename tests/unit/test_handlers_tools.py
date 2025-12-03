@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from docs_mcp.handlers.tools import (
+    handle_get_all_tags,
     handle_get_document,
     handle_get_table_of_contents,
     handle_navigate_to,
@@ -623,3 +624,196 @@ class TestHandleGetDocument:
         result = await handle_get_document(arguments, documents)
 
         assert result["tags"] == []
+
+
+class TestHandleGetAllTags:
+    """Test handle_get_all_tags function."""
+
+    @pytest.fixture
+    def sample_documents(self):
+        """Create sample documents for testing."""
+        return [
+            Document(
+                uri="docs://guides/getting-started",
+                title="Getting Started",
+                content="Introduction",
+                category="guides",
+                tags=["tutorial", "beginner"],
+                file_path="/docs/guides/getting-started.md",
+                relative_path="docs/guides/getting-started.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),
+            ),
+            Document(
+                uri="docs://api/authentication",
+                title="Authentication",
+                content="API docs",
+                category="api",
+                tags=["security", "api", "tutorial"],
+                file_path="/docs/api/authentication.md",
+                relative_path="docs/api/authentication.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),
+            ),
+            Document(
+                uri="docs://api/authorization",
+                title="Authorization",
+                content="Authorization docs",
+                category="api",
+                tags=["security", "api"],
+                file_path="/docs/api/authorization.md",
+                relative_path="docs/api/authorization.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),
+            ),
+        ]
+
+    @pytest.mark.asyncio
+    async def test_get_all_tags(self, sample_documents):
+        """Test getting all unique tags."""
+        arguments = {}
+
+        result = await handle_get_all_tags(arguments, sample_documents)
+
+        assert "tags" in result
+        assert "count" in result
+        assert isinstance(result["tags"], list)
+        # Should have 4 unique tags: api, beginner, security, tutorial
+        assert result["count"] == 4
+        assert sorted(result["tags"]) == ["api", "beginner", "security", "tutorial"]
+
+    @pytest.mark.asyncio
+    async def test_get_all_tags_sorted_alphabetically(self, sample_documents):
+        """Test tags are sorted alphabetically."""
+        arguments = {}
+
+        result = await handle_get_all_tags(arguments, sample_documents)
+
+        assert result["tags"] == sorted(result["tags"])
+
+    @pytest.mark.asyncio
+    async def test_get_all_tags_with_category_filter(self, sample_documents):
+        """Test filtering tags by category."""
+        arguments = {"category": "api"}
+
+        result = await handle_get_all_tags(arguments, sample_documents)
+
+        # Only api and security tags from api category (tutorial appears in api too)
+        assert "tags" in result
+        assert "api" in result["tags"]
+        assert "security" in result["tags"]
+        assert "tutorial" in result["tags"]
+        assert "beginner" not in result["tags"]
+
+    @pytest.mark.asyncio
+    async def test_get_all_tags_with_include_counts(self, sample_documents):
+        """Test including document counts per tag."""
+        arguments = {"include_counts": True}
+
+        result = await handle_get_all_tags(arguments, sample_documents)
+
+        assert "tags" in result
+        assert "count" in result
+        assert "tag_counts" in result
+        assert isinstance(result["tag_counts"], list)
+        
+        # Verify structure of tag_counts
+        for item in result["tag_counts"]:
+            assert "tag" in item
+            assert "document_count" in item
+
+    @pytest.mark.asyncio
+    async def test_get_all_tags_counts_are_correct(self, sample_documents):
+        """Test document counts are accurate."""
+        arguments = {"include_counts": True}
+
+        result = await handle_get_all_tags(arguments, sample_documents)
+
+        tag_counts_dict = {item["tag"]: item["document_count"] for item in result["tag_counts"]}
+        
+        # tutorial appears in 2 docs (getting-started and authentication)
+        assert tag_counts_dict["tutorial"] == 2
+        # api appears in 2 docs (authentication and authorization)
+        assert tag_counts_dict["api"] == 2
+        # security appears in 2 docs
+        assert tag_counts_dict["security"] == 2
+        # beginner appears in 1 doc
+        assert tag_counts_dict["beginner"] == 1
+
+    @pytest.mark.asyncio
+    async def test_get_all_tags_without_counts(self, sample_documents):
+        """Test tag_counts is not included when include_counts is false."""
+        arguments = {"include_counts": False}
+
+        result = await handle_get_all_tags(arguments, sample_documents)
+
+        assert "tags" in result
+        assert "count" in result
+        assert "tag_counts" not in result
+
+    @pytest.mark.asyncio
+    async def test_get_all_tags_with_category_and_counts(self, sample_documents):
+        """Test combining category filter with counts."""
+        arguments = {"category": "guides", "include_counts": True}
+
+        result = await handle_get_all_tags(arguments, sample_documents)
+
+        assert "tag_counts" in result
+        # Only guides category has tutorial and beginner
+        tag_names = [item["tag"] for item in result["tag_counts"]]
+        assert "tutorial" in tag_names
+        assert "beginner" in tag_names
+        assert "api" not in tag_names
+
+    @pytest.mark.asyncio
+    async def test_get_all_tags_empty_documents(self):
+        """Test with empty document list."""
+        arguments = {}
+
+        result = await handle_get_all_tags(arguments, [])
+
+        assert result["tags"] == []
+        assert result["count"] == 0
+
+    @pytest.mark.asyncio
+    async def test_get_all_tags_no_matching_category(self, sample_documents):
+        """Test with category that has no documents."""
+        arguments = {"category": "nonexistent"}
+
+        result = await handle_get_all_tags(arguments, sample_documents)
+
+        assert result["tags"] == []
+        assert result["count"] == 0
+
+    @pytest.mark.asyncio
+    async def test_get_all_tags_documents_without_tags(self):
+        """Test with documents that have no tags."""
+        documents = [
+            Document(
+                uri="docs://test",
+                title="Test",
+                content="Test content",
+                category="test",
+                tags=[],
+                file_path="/test.md",
+                relative_path="test.md",
+                size_bytes=100,
+                last_modified=datetime.now(UTC),
+            )
+        ]
+
+        arguments = {}
+        result = await handle_get_all_tags(arguments, documents)
+
+        assert result["tags"] == []
+        assert result["count"] == 0
+
+    @pytest.mark.asyncio
+    async def test_get_all_tags_handles_exception(self):
+        """Test get all tags handles exceptions gracefully."""
+        arguments = {}
+
+        # Pass None to trigger exception
+        result = await handle_get_all_tags(arguments, None)  # type: ignore
+
+        assert "error" in result

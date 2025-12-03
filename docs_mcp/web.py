@@ -57,14 +57,21 @@ class GetDocumentRequest(BaseModel):
     uri: str
 
 
+class GetAllTagsRequest(BaseModel):
+    """Get all tags request model."""
+
+    category: str | None = None
+    include_counts: bool = False
+
+
 class DocumentationWebServer:
     """Web server for documentation browsing with MCP SSE transport support.
-    
+
     This server provides:
     - REST API endpoints for documentation browsing
     - Static file serving for the web UI
     - MCP protocol support via SSE transport (GET /sse, POST /messages/)
-    
+
     The MCP SSE transport allows AI clients (like VS Code) to connect via HTTP
     instead of stdio, enabling web-based MCP communication.
     """
@@ -85,14 +92,14 @@ class DocumentationWebServer:
         self.config = config
         self.documents = documents
         self.categories = categories
-        
+
         # Create the MCP server for SSE transport
         self.mcp_server = Server("hierarchical-docs-mcp")
         self._register_mcp_handlers()
-        
+
         # Create SSE transport - messages will be posted to /messages/
         self.sse_transport = SseServerTransport("/messages/")
-        
+
         self.app = FastAPI(
             title="Markdown MCP Documentation",
             description="Web interface for browsing documentation with MCP SSE support",
@@ -118,7 +125,7 @@ class DocumentationWebServer:
 
     def _register_mcp_handlers(self) -> None:
         """Register MCP protocol handlers for SSE transport."""
-        
+
         @self.mcp_server.list_tools()
         async def list_tools() -> list[Tool]:
             """List available tools."""
@@ -219,6 +226,27 @@ class DocumentationWebServer:
                         "required": ["uri"],
                     },
                 ),
+                Tool(
+                    name="get_all_tags",
+                    description=(
+                        "Get a list of all unique tags defined across the documentation. "
+                        "Optionally filter by category and include document counts per tag."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "category": {
+                                "type": "string",
+                                "description": "Optional category to filter tags from",
+                            },
+                            "include_counts": {
+                                "type": "boolean",
+                                "description": "Include document count for each tag (default: false)",
+                                "default": False,
+                            },
+                        },
+                    },
+                ),
             ]
 
         @self.mcp_server.call_tool()
@@ -250,6 +278,10 @@ class DocumentationWebServer:
 
             elif name == "get_document":
                 result = await tools.handle_get_document(arguments, self.documents)
+                return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+            elif name == "get_all_tags":
+                result = await tools.handle_get_all_tags(arguments, self.documents)
                 return [{"type": "text", "text": json.dumps(result, indent=2)}]
 
             else:
@@ -285,16 +317,16 @@ class DocumentationWebServer:
 
         async def sse_endpoint(request: Request) -> StarletteResponse:
             """SSE endpoint for MCP clients.
-            
+
             Clients connect here to establish an SSE stream for receiving
             server messages. The server sends an 'endpoint' event with the
             URL to POST messages to.
             """
             logger.info("MCP SSE client connecting...")
-            
+
             async with self.sse_transport.connect_sse(
-                request.scope, 
-                request.receive, 
+                request.scope,
+                request.receive,
                 request._send  # type: ignore[arg-type]
             ) as streams:
                 await self.mcp_server.run(
@@ -302,7 +334,7 @@ class DocumentationWebServer:
                     streams[1],
                     self.mcp_server.create_initialization_options(),
                 )
-            
+
             return StarletteResponse()
 
         # The SSE transport handles POST /messages/?session_id=...
@@ -546,4 +578,54 @@ class DocumentationWebServer:
                 return JSONResponse(content=result)
             except Exception as e:
                 logger.error(f"Get document failed: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.post("/api/tags")
+        async def get_all_tags(request: GetAllTagsRequest) -> JSONResponse:
+            """Get all unique tags across documentation.
+
+            Args:
+                request: Tag request parameters
+
+            Returns:
+                List of tags with optional counts
+            """
+            try:
+                result = await tools.handle_get_all_tags(
+                    arguments={
+                        "category": request.category,
+                        "include_counts": request.include_counts,
+                    },
+                    documents=self.documents,
+                )
+                return JSONResponse(content=result)
+            except Exception as e:
+                logger.error(f"Get all tags failed: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/api/tags")
+        async def get_all_tags_get(
+            category: str | None = Query(None, description="Category filter"),
+            include_counts: bool = Query(False, description="Include document count per tag"),
+        ) -> JSONResponse:
+            """Get all unique tags via GET request.
+
+            Args:
+                category: Optional category filter
+                include_counts: Whether to include document counts per tag
+
+            Returns:
+                List of tags with optional counts
+            """
+            try:
+                result = await tools.handle_get_all_tags(
+                    arguments={
+                        "category": category,
+                        "include_counts": include_counts,
+                    },
+                    documents=self.documents,
+                )
+                return JSONResponse(content=result)
+            except Exception as e:
+                logger.error(f"Get all tags failed: {e}")
                 raise HTTPException(status_code=500, detail=str(e))

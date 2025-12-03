@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "your-docs-mcp"
-version = "0.0.2"
+version = "0.0.3"
 description = "Model Context Protocol server for hierarchical documentation navigation with markdown and OpenAPI support"
 readme = "README.md"
 license = {text = "MIT"}
