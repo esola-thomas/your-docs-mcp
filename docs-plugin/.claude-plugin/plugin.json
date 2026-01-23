@@ -1,0 +1,20 @@
+{
+  "name": "docs-mcp",
+  "description": "Skills for creating, validating, and managing documentation source files with proper frontmatter and structure",
+  "version": "1.0.0",
+  "author": {
+    "name": "your-docs-mcp"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/esola-thomas/your-docs-mcp"
+  },
+  "license": "MIT",
+  "keywords": [
+    "documentation",
+    "markdown",
+    "frontmatter",
+    "validation",
+    "templates"
+  ]
+}
