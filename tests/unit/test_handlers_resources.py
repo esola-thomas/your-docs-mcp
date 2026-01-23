@@ -1,6 +1,6 @@
 """Unit tests for MCP resource handlers."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -28,7 +28,7 @@ class TestHandleResourceRead:
                 file_path="/docs/guides/getting-started.md",
                 relative_path="docs/guides/getting-started.md",
                 size_bytes=100,
-                last_modified=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),
+                last_modified=datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
             ),
             Document(
                 uri="docs://api/authentication",
@@ -39,7 +39,7 @@ class TestHandleResourceRead:
                 file_path="/docs/api/authentication.md",
                 relative_path="docs/api/authentication.md",
                 size_bytes=100,
-                last_modified=datetime(2024, 1, 2, 12, 0, 0, tzinfo=UTC),
+                last_modified=datetime(2024, 1, 2, 12, 0, 0, tzinfo=timezone.utc),
             ),
         ]
 
@@ -173,7 +173,7 @@ class TestHandleResourceRead:
                 file_path="/test.md",
                 relative_path="test.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             )
         ]
 
@@ -227,7 +227,7 @@ class TestHandleResourceRead:
                 file_path="/parent/doc.md",
                 relative_path="parent/doc.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             )
         ]
 
@@ -277,7 +277,7 @@ class TestListResources:
                 file_path="/docs/guides/getting-started.md",
                 relative_path="docs/guides/getting-started.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
             Document(
                 uri="docs://api/authentication",
@@ -288,7 +288,7 @@ class TestListResources:
                 file_path="/docs/api/authentication.md",
                 relative_path="docs/api/authentication.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
         ]
 
@@ -455,7 +455,7 @@ class TestListResources:
                 file_path=f"/test/doc{i}.md",
                 relative_path=f"test/doc{i}.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             )
             for i in range(3)
         ]
