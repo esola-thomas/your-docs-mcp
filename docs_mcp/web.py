@@ -305,6 +305,7 @@ class DocumentationWebServer:
         async def read_resource(uri: str) -> str:
             """Read a resource by URI."""
             from typing import cast
+
             result = await resources.handle_resource_read(uri, self.documents, self.categories)
 
             if "error" in result:
@@ -327,7 +328,7 @@ class DocumentationWebServer:
             async with self.sse_transport.connect_sse(
                 request.scope,
                 request.receive,
-                request._send  # type: ignore[arg-type]
+                request._send,  # type: ignore[arg-type]
             ) as streams:
                 await self.mcp_server.run(
                     streams[0],

@@ -70,9 +70,7 @@ def web_main() -> None:
         config = _validate_config_and_setup()
 
         logger.info("Starting Web Server only")
-        logger.info(
-            f"Web interface available at http://{config.web_host}:{config.web_port}"
-        )
+        logger.info(f"Web interface available at http://{config.web_host}:{config.web_port}")
 
         asyncio.run(serve_web_only(config))
 
