@@ -58,7 +58,7 @@ def search_content(
 
         # 1. Keyword Search
         keyword_results: dict[str, SearchResult] = {}
-        
+
         # Compile regex for case-insensitive search
         try:
             pattern = re.compile(sanitized_query, re.IGNORECASE)
@@ -70,10 +70,10 @@ def search_content(
                 continue
 
             title_score = 1.0 if pattern.search(doc.title) else 0.0
-            
+
             content_matches = pattern.findall(doc.content)
             content_score = min(len(content_matches) / 10.0, 1.0) if content_matches else 0.0
-            
+
             metadata_text = " ".join(doc.tags) + " " + (doc.category or "")
             metadata_score = 0.5 if pattern.search(metadata_text) else 0.0
 
@@ -120,7 +120,7 @@ def search_content(
         # 3. Merge Results
         final_results = []
         all_uris = set(keyword_results.keys()) | set(vector_scores.keys())
-        
+
         # Map for quick doc lookup
         doc_map = {d.uri: d for d in documents}
 
@@ -128,16 +128,16 @@ def search_content(
             doc = doc_map.get(uri)
             if not doc:
                 continue
-                
+
             if category_filter and not uri.startswith(f"docs://{category_filter}"):
                 continue
 
             k_result = keyword_results.get(uri)
             v_score = vector_scores.get(uri, 0.0)
-            
+
             # Get base keyword score or 0
             k_score = k_result.relevance_score if k_result else 0.0
-            
+
             # Weighted Combination
             if k_score > 0 and v_score > 0:
                 # Strong signal: appears in both
@@ -154,7 +154,7 @@ def search_content(
                 breadcrumbs = [crumb["name"] for crumb in get_breadcrumbs(doc.uri)]
                 category = breadcrumbs[0] if breadcrumbs else "docs"
                 excerpt = doc.excerpt(200)
-                
+
                 result = SearchResult(
                     document_uri=doc.uri,
                     title=doc.title,
@@ -165,7 +165,7 @@ def search_content(
                     match_type="semantic",
                     highlighted_excerpt=excerpt,
                 )
-            
+
             final_results.append(result)
 
         # Sort by relevance

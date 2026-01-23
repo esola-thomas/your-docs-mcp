@@ -60,20 +60,20 @@ class VectorStore:
                 text = f"{doc.title}\n\n{doc.content[:2000]}"
                 documents_text.append(text)
 
-                metadatas.append({
-                    "title": doc.title,
-                    "category": doc.category or "uncategorized",
-                    "uri": doc.uri
-                })
+                metadatas.append(
+                    {
+                        "title": doc.title,
+                        "category": doc.category or "uncategorized",
+                        "uri": doc.uri,
+                    }
+                )
 
             # Add in batches to prevent payload issues
             batch_size = 100
             for i in range(0, len(documents), batch_size):
                 end = min(i + batch_size, len(documents))
                 self.collection.add(
-                    ids=ids[i:end],
-                    documents=documents_text[i:end],
-                    metadatas=metadatas[i:end]
+                    ids=ids[i:end], documents=documents_text[i:end], metadatas=metadatas[i:end]
                 )
 
             logger.info(f"Indexed {len(documents)} documents in vector store")
@@ -96,9 +96,7 @@ class VectorStore:
 
         try:
             results = self.collection.query(
-                query_texts=[query],
-                n_results=limit,
-                include=["metadatas", "distances"]
+                query_texts=[query], n_results=limit, include=["metadatas", "distances"]
             )
 
             # Format results
@@ -115,11 +113,13 @@ class VectorStore:
                     dist = distances[i]
                     score = 1.0 - dist if dist < 1.0 else 0.0
 
-                    formatted_results.append({
-                        "uri": uri,
-                        "score": score,
-                        "metadata": metadatas[i] if len(metadatas) > i else {}
-                    })
+                    formatted_results.append(
+                        {
+                            "uri": uri,
+                            "score": score,
+                            "metadata": metadatas[i] if len(metadatas) > i else {},
+                        }
+                    )
 
             return formatted_results
 
