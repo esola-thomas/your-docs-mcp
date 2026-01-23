@@ -301,6 +301,27 @@ docs_mcp/
 - **Query Sanitization**: Search queries are sanitized to prevent injection attacks
 - **Audit Logging**: All file access attempts are logged for security auditing
 
+## Claude Code Plugin
+
+This repo includes a Claude Code plugin with skills for managing documentation files.
+
+### Install the Plugin
+
+```bash
+claude --plugin-dir /path/to/your-docs-mcp/docs-plugin
+```
+
+### Available Skills
+
+| Skill | Description |
+|-------|-------------|
+| `docs-plugin/skills/doc-create` | Create new docs with proper frontmatter |
+| `docs-plugin/skills/doc-validate` | Validate docs against standards |
+| `docs-plugin/skills/doc-template` | Generate doc templates |
+| `docs-plugin/skills/doc-search` | Search documentation content |
+
+See [`docs-plugin/README.md`](docs-plugin/README.md) for full details.
+
 ## Contributing
 
 Contributions are welcome! Please see the contribution guidelines for more information.
