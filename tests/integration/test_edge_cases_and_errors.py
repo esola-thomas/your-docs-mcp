@@ -5,7 +5,7 @@ to achieve complete code coverage.
 """
 
 import re
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -69,7 +69,7 @@ class TestNavigationContextEdgeCases:
             tags=[],
             frontmatter={},
             category=None,
-            last_modified=datetime.now(UTC),
+            last_modified=datetime.now(timezone.utc),
             size_bytes=8,
             parent=None,
         )
@@ -267,7 +267,7 @@ class TestHierarchyEdgeCases:
             tags=[],
             frontmatter={},
             category=None,
-            last_modified=datetime.now(UTC),
+            last_modified=datetime.now(timezone.utc),
             size_bytes=15,
             parent=None,
         )
@@ -321,7 +321,7 @@ class TestComplexSearchScenarios:
     @pytest.fixture
     def documents_with_special_content(self, tmp_path):
         """Create documents with special content for testing."""
-        from datetime import UTC, datetime
+        from datetime import datetime, timezone
 
         docs = []
 
@@ -337,7 +337,7 @@ class TestComplexSearchScenarios:
                 tags=["long"],
                 frontmatter={},
                 category="test",
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
                 size_bytes=len(long_content),
                 parent=None,
             )
@@ -355,7 +355,7 @@ class TestComplexSearchScenarios:
                 tags=["special"],
                 frontmatter={},
                 category="test",
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
                 size_bytes=len(special_content),
                 parent=None,
             )
