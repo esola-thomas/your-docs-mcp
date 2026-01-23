@@ -716,7 +716,7 @@ class TestHandleGetAllTags:
         assert "count" in result
         assert "tag_counts" in result
         assert isinstance(result["tag_counts"], list)
-        
+
         # Verify structure of tag_counts
         for item in result["tag_counts"]:
             assert "tag" in item
@@ -730,7 +730,7 @@ class TestHandleGetAllTags:
         result = await handle_get_all_tags(arguments, sample_documents)
 
         tag_counts_dict = {item["tag"]: item["document_count"] for item in result["tag_counts"]}
-        
+
         # tutorial appears in 2 docs (getting-started and authentication)
         assert tag_counts_dict["tutorial"] == 2
         # api appears in 2 docs (authentication and authorization)
