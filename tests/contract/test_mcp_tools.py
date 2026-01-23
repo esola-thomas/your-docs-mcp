@@ -1,6 +1,6 @@
 """Contract tests for MCP tool handlers."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -19,7 +19,7 @@ from docs_mcp.services.hierarchy import build_category_tree
 @pytest.fixture
 def sample_documents():
     """Create sample documents for testing."""
-    base_time = datetime.now(UTC)
+    base_time = datetime.now(timezone.utc)
 
     return [
         Document(
