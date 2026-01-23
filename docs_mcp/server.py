@@ -14,6 +14,7 @@ from docs_mcp.models.document import Document
 from docs_mcp.models.navigation import Category
 from docs_mcp.services.hierarchy import build_category_tree
 from docs_mcp.services.markdown import scan_markdown_files
+from docs_mcp.services.vector import get_vector_store
 from docs_mcp.utils.logger import logger
 
 
@@ -250,6 +251,12 @@ class DocumentationMCPServer:
         if self.documents:
             self.categories = build_category_tree(self.documents)
             logger.info(f"Built category tree with {len(self.categories)} categories")
+
+            # Index documents for vector search
+            try:
+                get_vector_store().add_documents(self.documents)
+            except Exception as e:
+                logger.error(f"Failed to index documents: {e}")
 
         logger.info(
             f"Initialization complete: {len(self.documents)} documents, "

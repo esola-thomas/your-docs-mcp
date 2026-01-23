@@ -8,6 +8,7 @@ from docs_mcp.models.navigation import Category, SearchResult
 from docs_mcp.security.sanitizer import sanitize_query
 from docs_mcp.services.cache import get_cache
 from docs_mcp.services.hierarchy import get_breadcrumbs
+from docs_mcp.services.vector import get_vector_store
 from docs_mcp.utils.logger import logger
 
 
@@ -55,63 +56,44 @@ def search_content(
         if cached:
             return cast(list[SearchResult], cached)
 
-        results = []
-
+        # 1. Keyword Search
+        keyword_results: dict[str, SearchResult] = {}
+        
         # Compile regex for case-insensitive search
         try:
             pattern = re.compile(sanitized_query, re.IGNORECASE)
         except re.error as e:
             raise SearchError(f"Invalid search pattern: {e}") from e
 
-        # Search through documents
         for doc in documents:
-            # Apply category filter if specified
-            if category_filter:
-                if not doc.uri.startswith(f"docs://{category_filter}"):
-                    continue
+            if category_filter and not doc.uri.startswith(f"docs://{category_filter}"):
+                continue
 
-            # Calculate relevance scores
-            title_score = 0.0
-            content_score = 0.0
-            metadata_score = 0.0
-
-            # Search in title (highest weight)
-            if pattern.search(doc.title):
-                title_score = 1.0
-
-            # Search in content
+            title_score = 1.0 if pattern.search(doc.title) else 0.0
+            
             content_matches = pattern.findall(doc.content)
-            if content_matches:
-                content_score = min(len(content_matches) / 10.0, 1.0)
-
-            # Search in tags and category (metadata)
+            content_score = min(len(content_matches) / 10.0, 1.0) if content_matches else 0.0
+            
             metadata_text = " ".join(doc.tags) + " " + (doc.category or "")
-            if pattern.search(metadata_text):
-                metadata_score = 0.5
+            metadata_score = 0.5 if pattern.search(metadata_text) else 0.0
 
-            # Calculate total relevance
             relevance = title_score * 0.5 + content_score * 0.3 + metadata_score * 0.2
 
             if relevance > 0:
-                # Determine match type
+                match_type: Literal["full_text", "metadata", "title", "semantic"]
                 if title_score > 0:
-                    match_type: Literal["full_text", "metadata", "title"] = "title"
+                    match_type = "title"
                 elif metadata_score > 0:
                     match_type = "metadata"
                 else:
                     match_type = "full_text"
 
-                # Extract excerpt with context
                 excerpt = _extract_excerpt(doc.content, sanitized_query)
                 highlighted = _highlight_matches(excerpt, sanitized_query)
-
-                # Get breadcrumbs
                 breadcrumbs = [crumb["name"] for crumb in get_breadcrumbs(doc.uri)]
-
-                # Determine category
                 category = breadcrumbs[0] if breadcrumbs else "docs"
 
-                result = SearchResult(
+                keyword_results[doc.uri] = SearchResult(
                     document_uri=doc.uri,
                     title=doc.title,
                     excerpt=excerpt,
@@ -121,13 +103,75 @@ def search_content(
                     match_type=match_type,
                     highlighted_excerpt=highlighted,
                 )
-                results.append(result)
 
-        # Sort by relevance (highest first)
-        results.sort(key=lambda r: r.relevance_score, reverse=True)
+        # 2. Semantic Search
+        vector_scores: dict[str, float] = {}
+        try:
+            # Fetch more results than limit to allow good intersection
+            vector_hits = get_vector_store().search(sanitized_query, limit=limit * 2)
+            for hit in vector_hits:
+                uri = hit.get("uri")
+                score = hit.get("score", 0.0)
+                if uri:
+                    vector_scores[uri] = score
+        except Exception as e:
+            logger.warning(f"Semantic search unavailable: {e}")
 
-        # Limit results
-        results = results[:limit]
+        # 3. Merge Results
+        final_results = []
+        all_uris = set(keyword_results.keys()) | set(vector_scores.keys())
+        
+        # Map for quick doc lookup
+        doc_map = {d.uri: d for d in documents}
+
+        for uri in all_uris:
+            doc = doc_map.get(uri)
+            if not doc:
+                continue
+                
+            if category_filter and not uri.startswith(f"docs://{category_filter}"):
+                continue
+
+            k_result = keyword_results.get(uri)
+            v_score = vector_scores.get(uri, 0.0)
+            
+            # Get base keyword score or 0
+            k_score = k_result.relevance_score if k_result else 0.0
+            
+            # Weighted Combination
+            if k_score > 0 and v_score > 0:
+                # Strong signal: appears in both
+                final_score = max(k_score, v_score) + 0.3
+            else:
+                final_score = max(k_score, v_score)
+
+            # Construct result if it wasn't in keyword results
+            if k_result:
+                result = k_result
+                result.relevance_score = final_score
+            else:
+                # Pure semantic match
+                breadcrumbs = [crumb["name"] for crumb in get_breadcrumbs(doc.uri)]
+                category = breadcrumbs[0] if breadcrumbs else "docs"
+                excerpt = doc.excerpt(200)
+                
+                result = SearchResult(
+                    document_uri=doc.uri,
+                    title=doc.title,
+                    excerpt=excerpt,
+                    breadcrumbs=breadcrumbs,
+                    category=category,
+                    relevance_score=final_score,
+                    match_type="semantic",
+                    highlighted_excerpt=excerpt,
+                )
+            
+            final_results.append(result)
+
+        # Sort by relevance
+        final_results.sort(key=lambda r: r.relevance_score, reverse=True)
+
+        results = final_results[:limit]
 
         logger.info(f"Search found {len(results)} results for: {sanitized_query}")
 

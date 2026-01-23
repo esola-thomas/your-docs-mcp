@@ -49,7 +49,7 @@ class SearchResult(BaseModel):
     breadcrumbs: list[str]
     category: str
     relevance_score: float
-    match_type: Literal["full_text", "metadata", "title"]
+    match_type: Literal["full_text", "metadata", "title", "semantic"]
     highlighted_excerpt: str = ""
 
     @property
