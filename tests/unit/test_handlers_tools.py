@@ -1,6 +1,6 @@
 """Unit tests for MCP tool handlers."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
@@ -33,7 +33,7 @@ class TestHandleSearchDocumentation:
                 file_path="/docs/guides/getting-started.md",
                 relative_path="docs/guides/getting-started.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
             Document(
                 uri="docs://api/authentication",
@@ -44,7 +44,7 @@ class TestHandleSearchDocumentation:
                 file_path="/docs/api/authentication.md",
                 relative_path="docs/api/authentication.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
         ]
 
@@ -189,7 +189,7 @@ class TestHandleNavigateTo:
                 file_path="/docs/guides/getting-started.md",
                 relative_path="docs/guides/getting-started.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             )
         ]
 
@@ -297,7 +297,7 @@ class TestHandleGetTableOfContents:
                 file_path="/docs/guides/getting-started.md",
                 relative_path="docs/guides/getting-started.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             )
         ]
 
@@ -376,7 +376,7 @@ class TestHandleSearchByTags:
                 file_path="/docs/guides/getting-started.md",
                 relative_path="docs/guides/getting-started.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
             Document(
                 uri="docs://api/authentication",
@@ -387,7 +387,7 @@ class TestHandleSearchByTags:
                 file_path="/docs/api/authentication.md",
                 relative_path="docs/api/authentication.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
         ]
 
@@ -497,7 +497,7 @@ class TestHandleGetDocument:
                 file_path="/docs/guides/getting-started.md",
                 relative_path="docs/guides/getting-started.md",
                 size_bytes=100,
-                last_modified=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),
+                last_modified=datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
             )
         ]
 
@@ -594,7 +594,7 @@ class TestHandleGetDocument:
                 file_path="/test.md",
                 relative_path="test.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             )
         ]
 
@@ -616,7 +616,7 @@ class TestHandleGetDocument:
                 file_path="/test.md",
                 relative_path="test.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             )
         ]
 
@@ -642,7 +642,7 @@ class TestHandleGetAllTags:
                 file_path="/docs/guides/getting-started.md",
                 relative_path="docs/guides/getting-started.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
             Document(
                 uri="docs://api/authentication",
@@ -653,7 +653,7 @@ class TestHandleGetAllTags:
                 file_path="/docs/api/authentication.md",
                 relative_path="docs/api/authentication.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
             Document(
                 uri="docs://api/authorization",
@@ -664,7 +664,7 @@ class TestHandleGetAllTags:
                 file_path="/docs/api/authorization.md",
                 relative_path="docs/api/authorization.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
         ]
 
@@ -716,7 +716,7 @@ class TestHandleGetAllTags:
         assert "count" in result
         assert "tag_counts" in result
         assert isinstance(result["tag_counts"], list)
-        
+
         # Verify structure of tag_counts
         for item in result["tag_counts"]:
             assert "tag" in item
@@ -730,7 +730,7 @@ class TestHandleGetAllTags:
         result = await handle_get_all_tags(arguments, sample_documents)
 
         tag_counts_dict = {item["tag"]: item["document_count"] for item in result["tag_counts"]}
-        
+
         # tutorial appears in 2 docs (getting-started and authentication)
         assert tag_counts_dict["tutorial"] == 2
         # api appears in 2 docs (authentication and authorization)
@@ -798,7 +798,7 @@ class TestHandleGetAllTags:
                 file_path="/test.md",
                 relative_path="test.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             )
         ]
 

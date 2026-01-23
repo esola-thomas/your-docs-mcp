@@ -1,6 +1,6 @@
 """Unit tests for Document model."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -23,7 +23,7 @@ class TestDocumentModel:
             category="test",
             tags=["test", "sample"],
             frontmatter={"author": "Test"},
-            last_modified=datetime.now(UTC),
+            last_modified=datetime.now(timezone.utc),
             size_bytes=100,
             parent=None,
         )
@@ -40,7 +40,7 @@ class TestDocumentModel:
             category="test",
             tags=["test"],
             frontmatter={},
-            last_modified=datetime.now(UTC),
+            last_modified=datetime.now(timezone.utc),
             size_bytes=150,
             parent=None,
         )
@@ -58,7 +58,7 @@ class TestDocumentModel:
             category="test",
             tags=[],
             frontmatter={},
-            last_modified=datetime.now(UTC),
+            last_modified=datetime.now(timezone.utc),
             size_bytes=len(long_content),
             parent=None,
         )
@@ -92,7 +92,7 @@ class TestDocumentModel:
             category="test",
             tags=[],
             frontmatter={},
-            last_modified=datetime.now(UTC),
+            last_modified=datetime.now(timezone.utc),
             size_bytes=19,
             parent=None,
         )
@@ -110,7 +110,7 @@ class TestDocumentModel:
             category="test",
             tags=[],
             frontmatter={},
-            last_modified=datetime.now(UTC),
+            last_modified=datetime.now(timezone.utc),
             size_bytes=0,
             parent=None,
         )
@@ -134,7 +134,7 @@ class TestDocumentModel:
             category="guides",
             tags=[],
             frontmatter={},
-            last_modified=datetime.now(UTC),
+            last_modified=datetime.now(timezone.utc),
             size_bytes=17,
             parent=None,
         )
@@ -152,7 +152,7 @@ class TestDocumentModel:
             category="api",
             tags=[],
             frontmatter={},
-            last_modified=datetime.now(UTC),
+            last_modified=datetime.now(timezone.utc),
             size_bytes=7,
             parent=None,
         )
@@ -169,7 +169,7 @@ class TestDocumentModel:
             category=None,
             tags=[],
             frontmatter={},
-            last_modified=datetime.now(UTC),
+            last_modified=datetime.now(timezone.utc),
             size_bytes=8,
             parent=None,
         )

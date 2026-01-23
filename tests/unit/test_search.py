@@ -1,6 +1,6 @@
 """Unit tests for search functionality."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
@@ -33,7 +33,7 @@ class TestSearchContent:
                 file_path="/docs/guides/getting-started.md",
                 relative_path="docs/guides/getting-started.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
             Document(
                 uri="docs://api/authentication",
@@ -45,7 +45,7 @@ class TestSearchContent:
                 file_path="/docs/api/authentication.md",
                 relative_path="docs/api/authentication.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
             Document(
                 uri="docs://guides/advanced",
@@ -57,7 +57,7 @@ class TestSearchContent:
                 file_path="/docs/guides/advanced.md",
                 relative_path="docs/guides/advanced.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
         ]
 
@@ -239,7 +239,7 @@ class TestSearchByMetadata:
                 file_path="/docs/guides/getting-started.md",
                 relative_path="docs/guides/getting-started.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
             Document(
                 uri="docs://api/authentication",
@@ -250,7 +250,7 @@ class TestSearchByMetadata:
                 file_path="/docs/api/authentication.md",
                 relative_path="docs/api/authentication.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
             Document(
                 uri="docs://guides/advanced",
@@ -261,7 +261,7 @@ class TestSearchByMetadata:
                 file_path="/docs/guides/advanced.md",
                 relative_path="docs/guides/advanced.md",
                 size_bytes=100,
-                last_modified=datetime.now(UTC),
+                last_modified=datetime.now(timezone.utc),
             ),
         ]
 

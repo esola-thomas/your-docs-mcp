@@ -254,8 +254,7 @@ async def handle_get_all_tags(
 
         if include_counts:
             result["tag_counts"] = [
-                {"tag": tag, "document_count": tag_frequency[tag]}
-                for tag in sorted_tags
+                {"tag": tag, "document_count": tag_frequency[tag]} for tag in sorted_tags
             ]
 
         return result
