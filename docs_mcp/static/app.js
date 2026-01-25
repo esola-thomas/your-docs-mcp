@@ -5,10 +5,11 @@
 // State Management
 const state = {
     currentView: 'home',
-    theme: localStorage.getItem('theme') || 'light',
+    theme: localStorage.getItem('theme') || 'dark',
     searchResults: [],
     tocData: null,
     currentDocument: null,
+    availableTags: [],
 };
 
 // ============================================================================
@@ -72,7 +73,19 @@ function initializeEventListeners() {
     const headerSearch = document.getElementById('header-search');
     headerSearch.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
-            performSearch(headerSearch.value);
+            const query = headerSearch.value.trim();
+            if (query) {
+                // Navigate to search view first, then perform search
+                navigateToView('search');
+                // Wait for DOM to update, then search
+                setTimeout(() => {
+                    const searchInput = document.getElementById('search-query-input');
+                    if (searchInput) {
+                        searchInput.value = query;
+                    }
+                    performSearch(query);
+                }, 50);
+            }
         }
     });
 
@@ -130,6 +143,9 @@ function navigateToView(view) {
         case 'tags':
             showTagsView();
             break;
+        case 'release':
+            showReleaseView();
+            break;
         default:
             showHomeView();
     }
@@ -159,7 +175,7 @@ function showHomeView() {
     contentArea.innerHTML = `
         <div class="card">
             <div class="card-header">
-                <h1 class="card-title">Welcome to Markdown MCP Documentation</h1>
+                <h1 class="card-title">Hello World Welcome to Markdown MCP Documentation</h1>
                 <p class="card-subtitle">Browse and search documentation with the same powerful tools available to LLMs</p>
             </div>
 
@@ -185,6 +201,14 @@ function showHomeView() {
                         <i class="fas fa-tags" style="font-size: 2.5rem; color: var(--accent-primary); margin-bottom: 1rem;"></i>
                         <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">Tags</h3>
                         <p style="color: var(--text-secondary); font-size: 0.9375rem;">Filter documentation by tags</p>
+                    </div>
+                </div>
+
+                <div class="card" style="cursor: pointer;" onclick="navigateToView('release')">
+                    <div style="text-align: center;">
+                        <i class="fas fa-file-pdf" style="font-size: 2.5rem; color: var(--accent-primary); margin-bottom: 1rem;"></i>
+                        <h3 style="margin-bottom: 0.5rem; color: var(--text-primary);">Generate Release</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9375rem;">Create PDF documentation releases</p>
                     </div>
                 </div>
             </div>
@@ -272,10 +296,10 @@ function showTagsView() {
         <div class="card">
             <div class="card-header">
                 <h1 class="card-title">Browse by Tags</h1>
-                <p class="card-subtitle">Filter documentation by metadata tags</p>
+                <p class="card-subtitle">Filter documentation by metadata tags. Click tags below or type your own.</p>
             </div>
 
-            <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
                 <input
                     type="text"
                     id="tags-input"
@@ -288,6 +312,10 @@ function showTagsView() {
                     <i class="fas fa-filter" style="margin-right: 0.5rem;"></i>
                     Filter
                 </button>
+            </div>
+
+            <div id="available-tags-container" style="margin-bottom: 2rem;">
+                <div class="loading-skeleton skeleton-text" style="width: 60%;"></div>
             </div>
 
             <div id="tags-results-container"></div>
@@ -307,6 +335,78 @@ function showTagsView() {
     tagsBtn.addEventListener('click', () => {
         searchByTags(tagsInput.value);
     });
+
+    // Load available tags
+    loadAvailableTags();
+}
+
+async function loadAvailableTags() {
+    const container = document.getElementById('available-tags-container');
+    if (!container) return;
+
+    try {
+        const response = await fetch('/api/tags?include_counts=true');
+        const data = await response.json();
+
+        if (data.error) {
+            container.innerHTML = `<p style="color: var(--text-tertiary);">Could not load tags</p>`;
+            return;
+        }
+
+        const tags = data.tag_counts || data.tags || [];
+        if (tags.length === 0) {
+            container.innerHTML = `<p style="color: var(--text-tertiary);">No tags found in documentation</p>`;
+            return;
+        }
+
+        state.availableTags = Array.isArray(tags[0]) ? tags : tags.map(t => typeof t === 'string' ? { tag: t, document_count: 0 } : t);
+
+        let html = `
+            <div style="margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">
+                <i class="fas fa-tags" style="margin-right: 0.5rem;"></i>
+                Available tags (click to add):
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        `;
+
+        state.availableTags.forEach(item => {
+            const tagName = item.tag || item;
+            const count = item.document_count || 0;
+            html += `
+                <span class="tag tag-clickable" onclick="addTagToInput('${escapeHtml(tagName)}')" style="cursor: pointer; transition: all 0.2s;">
+                    <i class="fas fa-tag"></i> ${escapeHtml(tagName)}
+                    ${count > 0 ? `<span style="opacity: 0.7; margin-left: 0.25rem;">(${count})</span>` : ''}
+                </span>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (err) {
+        console.error('Failed to load tags:', err);
+        container.innerHTML = `<p style="color: var(--text-tertiary);">Could not load tags</p>`;
+    }
+}
+
+function addTagToInput(tag) {
+    const tagsInput = document.getElementById('tags-input');
+    if (!tagsInput) return;
+
+    const currentValue = tagsInput.value.trim();
+    const existingTags = currentValue ? currentValue.split(',').map(t => t.trim().toLowerCase()) : [];
+
+    // Don't add duplicate tags
+    if (existingTags.includes(tag.toLowerCase())) {
+        return;
+    }
+
+    if (currentValue) {
+        tagsInput.value = currentValue + ', ' + tag;
+    } else {
+        tagsInput.value = tag;
+    }
+
+    tagsInput.focus();
 }
 
 // ============================================================================
@@ -551,6 +651,161 @@ async function searchByTags(tagsInput) {
 }
 
 // ============================================================================
+// PDF Release Generation
+// ============================================================================
+
+function showReleaseView() {
+    const contentArea = document.getElementById('content-area');
+    contentArea.innerHTML = `
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title">Generate PDF Release</h1>
+                <p class="card-subtitle">Create a PDF documentation release with optional confidentiality markings</p>
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-weight: 500;">
+                        Version (optional)
+                    </label>
+                    <input
+                        type="text"
+                        id="release-version-input"
+                        class="search-input"
+                        placeholder="e.g., 2.0.0 (defaults to current date)"
+                        style="max-width: 300px; padding: 0.75rem 1rem; font-size: 1rem;"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; color: var(--text-secondary);">
+                        <input
+                            type="checkbox"
+                            id="release-confidential-checkbox"
+                            style="width: 1.25rem; height: 1.25rem; cursor: pointer;"
+                        >
+                        <span>
+                            <strong style="color: var(--text-primary);">Add confidentiality markings</strong><br>
+                            <small>Includes watermark, headers, footers with "CONFIDENTIAL" notices</small>
+                        </span>
+                    </label>
+                </div>
+
+                <button class="btn btn-primary" id="generate-pdf-btn" style="padding: 0.75rem 2rem;">
+                    <i class="fas fa-file-pdf" style="margin-right: 0.5rem;"></i>
+                    Generate PDF Release
+                </button>
+            </div>
+
+            <div id="release-result-container"></div>
+
+            <div style="margin-top: 2rem; padding: 1.5rem; background: var(--bg-secondary); border-radius: var(--radius-lg);">
+                <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+                    <i class="fas fa-info-circle" style="margin-right: 0.5rem;"></i>
+                    Requirements
+                </h3>
+                <ul style="color: var(--text-secondary); line-height: 2;">
+                    <li><strong>pandoc</strong> - Document converter (<code>sudo apt install pandoc</code>)</li>
+                    <li><strong>texlive-xetex</strong> - LaTeX PDF engine (<code>sudo apt install texlive-xetex texlive-latex-extra</code>)</li>
+                    <li><strong>Pillow</strong> - For ASCII diagram conversion (<code>pip install Pillow</code>)</li>
+                </ul>
+            </div>
+        </div>
+    `;
+
+    // Add event listener
+    document.getElementById('generate-pdf-btn').addEventListener('click', generatePDFRelease);
+}
+
+async function generatePDFRelease() {
+    const versionInput = document.getElementById('release-version-input');
+    const confidentialCheckbox = document.getElementById('release-confidential-checkbox');
+    const container = document.getElementById('release-result-container');
+    const btn = document.getElementById('generate-pdf-btn');
+
+    const version = versionInput.value.trim() || null;
+    const confidential = confidentialCheckbox.checked;
+
+    // Disable button and show loading
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Generating...';
+
+    container.innerHTML = `
+        <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: var(--radius-lg); text-align: center;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-primary); margin-bottom: 1rem;"></i>
+            <p style="color: var(--text-secondary);">Generating PDF documentation release...</p>
+            <p style="color: var(--text-tertiary); font-size: 0.875rem;">This may take a few moments</p>
+        </div>
+    `;
+
+    try {
+        const response = await fetch('/api/generate-pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ version, confidential }),
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+            container.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-circle error-icon"></i>
+                    <div class="error-content">
+                        <h3>PDF Generation Failed</h3>
+                        <p>${escapeHtml(data.error || 'Unknown error')}</p>
+                        ${data.stdout ? `<pre style="margin-top: 1rem; font-size: 0.8125rem; overflow-x: auto;">${escapeHtml(data.stdout)}</pre>` : ''}
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div style="padding: 1.5rem; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1)); border: 1px solid var(--accent-primary); border-radius: var(--radius-lg);">
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <i class="fas fa-check-circle" style="font-size: 3rem; color: #10b981; margin-bottom: 1rem;"></i>
+                    <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">PDF Generated Successfully!</h3>
+                    <p style="color: var(--text-secondary);">${escapeHtml(data.message || 'Documentation release created')}</p>
+                </div>
+
+                <div style="background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius-md); font-family: 'JetBrains Mono', monospace; font-size: 0.875rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: var(--text-secondary);">Output File:</span>
+                        <span style="color: var(--text-primary);">${escapeHtml(data.output_file || 'N/A')}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: var(--text-secondary);">Manifest:</span>
+                        <span style="color: var(--text-primary);">${escapeHtml(data.manifest_file || 'N/A')}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: var(--text-secondary);">Version:</span>
+                        <span style="color: var(--text-primary);">${escapeHtml(data.version || 'auto')}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary);">Confidential:</span>
+                        <span style="color: var(--text-primary);">${data.confidential ? 'Yes' : 'No'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (err) {
+        container.innerHTML = `
+            <div class="error-state">
+                <i class="fas fa-exclamation-circle error-icon"></i>
+                <div class="error-content">
+                    <h3>Request Failed</h3>
+                    <p>${escapeHtml(err.message)}</p>
+                </div>
+            </div>
+        `;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-file-pdf" style="margin-right: 0.5rem;"></i> Generate PDF Release';
+    }
+}
+
+// ============================================================================
 // Document Display
 // ============================================================================
 
@@ -744,3 +999,5 @@ window.navigateToView = navigateToView;
 window.navigateToDocument = navigateToDocument;
 window.performSearch = performSearch;
 window.searchByTags = searchByTags;
+window.addTagToInput = addTagToInput;
+window.generatePDFRelease = generatePDFRelease;

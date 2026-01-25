@@ -17,15 +17,39 @@ A Model Context Protocol (MCP) server that enables AI assistants to navigate and
 
 ### Installation
 
+**Minimal (No Semantic Search):**
 ```bash
-# Install from PyPI
+# Install base package - keyword search only, smallest footprint
 pip install your-docs-mcp
+```
 
-# Or install from source
+**With Vector Search (CPU - Recommended):**
+```bash
+# Install with semantic search using CPU-only PyTorch (~200MB vs ~1.5GB)
+pip install "your-docs-mcp[vector]" --extra-index-url https://download.pytorch.org/whl/cpu
+```
+
+**With Vector Search (GPU/CUDA):**
+```bash
+# Install with semantic search using CUDA-enabled PyTorch
+# Only use if you have NVIDIA GPU and need faster embeddings
+pip install "your-docs-mcp[vector-gpu]"
+```
+
+**From Source:**
+```bash
 git clone https://github.com/esola-thomas/Markdown-MCP
 cd Markdown-MCP
+
+# CPU vector search (recommended)
+pip install -e ".[vector]" --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Or minimal (no vector search)
 pip install -e .
 ```
+
+> **Note:** The `[vector]` extra installs ChromaDB and Sentence Transformers for semantic search.
+> Without it, the server still works but uses keyword-based search only.
 
 ### Basic Configuration
 
@@ -35,10 +59,17 @@ pip install -e .
 export DOCS_ROOT=/path/to/your/docs
 ```
 
-2. Start the MCP server:
+2. Start the server:
 
 ```bash
+# MCP + Web server (recommended for development)
+your-docs-server
+
+# MCP server only (for AI clients like Claude Desktop)
 your-docs-mcp
+
+# Web server only (REST API + browser UI)
+your-docs-web
 ```
 
 ### Claude Desktop Configuration
@@ -75,28 +106,26 @@ Create `.vscode/mcp.json` in your workspace:
 }
 ```
 
-### Try the Example
+### Try with Sample Documentation
 
-This repository includes a complete example documentation structure in the [`example/`](example/) folder that you can use to test the MCP server or as a template for your own documentation.
+This repository includes documentation in the [`docs/`](docs/) folder that serves as both reference documentation and an example structure for your own projects.
 
 **Quick test:**
 
 ```bash
-# Point DOCS_ROOT to the example folder
-export DOCS_ROOT=/path/to/Markdown-MCP/example
+# Point DOCS_ROOT to the docs folder
+export DOCS_ROOT=/path/to/Markdown-MCP/docs
 
 # Start the server
 your-docs-mcp
 ```
 
-The example includes:
+The `docs/` folder demonstrates:
 - Hierarchical documentation structure with nested categories
 - Markdown files with proper YAML frontmatter
-- Sample API documentation and guides
+- Architecture documentation and guides
 - OpenAPI 3.0 specification example
-- Comprehensive README explaining the structure
-
-See the [`example/README.md`](example/README.md) for detailed information about the structure and how to customize it for your project.
+- Recommended organization patterns
 
 ## Web Interface
 
@@ -104,12 +133,19 @@ The Markdown MCP server includes a built-in web interface that allows users to b
 
 ### Accessing the Web Interface
 
-When you start the server, it automatically launches both the MCP server (for AI assistants) and a web server (for browser access):
+Start the server with web support using one of these commands:
 
 ```bash
 export DOCS_ROOT=/path/to/your/docs
-your-docs-mcp
+
+# Both MCP + Web server
+your-docs-server
+
+# Web server only (no MCP)
+your-docs-web
 ```
+
+> **Note:** `your-docs-mcp` does NOT start the web server (MCP-only mode for AI clients).
 
 By default, the web interface is available at: **http://127.0.0.1:8123**
 
@@ -241,7 +277,7 @@ See `.env.example` for all available configuration options:
 - `MCP_DOCS_CACHE_TTL`: Cache TTL in seconds (default: 3600)
 - `MCP_DOCS_OPENAPI_SPECS`: Comma-separated OpenAPI spec paths
 - `MCP_DOCS_SEARCH_LIMIT`: Maximum search results (default: 10)
-- `MCP_DOCS_ENABLE_WEB_SERVER`: Enable/disable web server (default: true)
+- `MCP_DOCS_ENABLE_WEB_SERVER`: Enable web server for `your-docs-server` command (default: true)
 - `MCP_DOCS_WEB_HOST`: Web server host (default: 127.0.0.1)
 - `MCP_DOCS_WEB_PORT`: Web server port (default: 8123)
 - `LOG_LEVEL`: Logging level (default: INFO)
@@ -255,7 +291,10 @@ See `.env.example` for all available configuration options:
 git clone https://github.com/esola-thomas/Markdown-MCP
 cd Markdown-MCP
 
-# Install development dependencies
+# Install development dependencies with CPU-only vector search (recommended)
+pip install -e ".[dev,vector]" --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Or minimal dev install (no vector search)
 pip install -e ".[dev]"
 
 # Run tests

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "your-docs-mcp"
-version = "0.0.4"
+version = "0.0.5"
 description = "Model Context Protocol server for hierarchical documentation navigation with markdown and OpenAPI support"
 readme = "README.md"
 license = {text = "MIT"}
@@ -32,13 +32,25 @@ dependencies = [
     "watchdog>=3.0.0",
     "fastapi>=0.104.0",
     "uvicorn>=0.24.0",
-    "fastapi>=0.104.0",
-    "uvicorn>=0.24.0",
-    "chromadb>=0.4.0",
-    "sentence-transformers>=2.2.2",
 ]
 
 [project.optional-dependencies]
+# Vector search with CPU-only PyTorch (recommended for most users)
+vector = [
+    "chromadb>=0.4.0",
+    "sentence-transformers>=2.2.2",
+    # CPU-only torch - must install with: pip install .[vector] --extra-index-url https://download.pytorch.org/whl/cpu
+]
+# Vector search with GPU support (for CUDA-enabled systems)
+vector-gpu = [
+    "chromadb>=0.4.0",
+    "sentence-transformers>=2.2.2",
+    # Uses default torch with CUDA support
+]
+# PDF generation dependencies
+pdf = [
+    "Pillow>=9.0.0",
+]
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
@@ -48,6 +60,7 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.5.0",
     "types-PyYAML",
+    "python-dotenv>=1.0.0",
 ]
 
 [project.scripts]

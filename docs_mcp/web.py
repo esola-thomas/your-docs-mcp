@@ -64,6 +64,13 @@ class GetAllTagsRequest(BaseModel):
     include_counts: bool = False
 
 
+class GeneratePDFRequest(BaseModel):
+    """Generate PDF release request model."""
+
+    version: str | None = None
+    confidential: bool = False
+
+
 class DocumentationWebServer:
     """Web server for documentation browsing with MCP SSE transport support.
 
@@ -247,6 +254,28 @@ class DocumentationWebServer:
                         },
                     },
                 ),
+                Tool(
+                    name="generate_pdf_release",
+                    description=(
+                        "Generate a PDF documentation release. Creates a formatted PDF "
+                        "with all documentation, table of contents, and optional "
+                        "confidentiality markings (watermark, headers, footers)."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "version": {
+                                "type": "string",
+                                "description": "Version string for the release (e.g., '2.0.0'). Defaults to current date.",
+                            },
+                            "confidential": {
+                                "type": "boolean",
+                                "description": "Add confidentiality markings (watermark, headers, footers). Default: false",
+                                "default": False,
+                            },
+                        },
+                    },
+                ),
             ]
 
         @self.mcp_server.call_tool()
@@ -282,6 +311,12 @@ class DocumentationWebServer:
 
             elif name == "get_all_tags":
                 result = await tools.handle_get_all_tags(arguments, self.documents)
+                return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+            elif name == "generate_pdf_release":
+                result = await tools.handle_generate_pdf_release(
+                    arguments, Path(self.config.docs_root)
+                )
                 return [{"type": "text", "text": json.dumps(result, indent=2)}]
 
             else:
@@ -629,4 +664,54 @@ class DocumentationWebServer:
                 return JSONResponse(content=result)
             except Exception as e:
                 logger.error(f"Get all tags failed: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.post("/api/generate-pdf")
+        async def generate_pdf(request: GeneratePDFRequest) -> JSONResponse:
+            """Generate PDF documentation release.
+
+            Args:
+                request: PDF generation parameters
+
+            Returns:
+                Generation result with file paths
+            """
+            try:
+                result = await tools.handle_generate_pdf_release(
+                    arguments={
+                        "version": request.version,
+                        "confidential": request.confidential,
+                    },
+                    docs_root=Path(self.config.docs_root),
+                )
+                return JSONResponse(content=result)
+            except Exception as e:
+                logger.error(f"PDF generation failed: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+
+        @self.app.get("/api/generate-pdf")
+        async def generate_pdf_get(
+            version: str | None = Query(None, description="Version string for the release"),
+            confidential: bool = Query(False, description="Add confidentiality markings"),
+        ) -> JSONResponse:
+            """Generate PDF documentation release via GET request.
+
+            Args:
+                version: Optional version string
+                confidential: Whether to add confidentiality markings
+
+            Returns:
+                Generation result with file paths
+            """
+            try:
+                result = await tools.handle_generate_pdf_release(
+                    arguments={
+                        "version": version,
+                        "confidential": confidential,
+                    },
+                    docs_root=Path(self.config.docs_root),
+                )
+                return JSONResponse(content=result)
+            except Exception as e:
+                logger.error(f"PDF generation failed: {e}")
                 raise HTTPException(status_code=500, detail=str(e))

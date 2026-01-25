@@ -1,5 +1,8 @@
 """MCP tool handlers for documentation queries."""
 
+import asyncio
+import subprocess
+from pathlib import Path
 from typing import Any
 
 from docs_mcp.models.document import Document
@@ -262,3 +265,93 @@ async def handle_get_all_tags(
     except Exception as e:
         logger.error(f"Get all tags failed: {e}")
         return {"error": str(e)}
+
+
+async def handle_generate_pdf_release(
+    arguments: dict[str, Any],
+    docs_root: Path,
+) -> dict[str, Any]:
+    """Handle generate_pdf_release tool request.
+
+    Generates a PDF documentation release using the generate-docs-pdf.sh script.
+
+    Args:
+        arguments: Tool arguments containing optional 'version' and 'confidential' flag
+        docs_root: Root directory of the documentation
+
+    Returns:
+        Dictionary with 'success' status, 'output_file', and 'manifest_file' paths
+    """
+    version = arguments.get("version")
+    confidential = arguments.get("confidential", False)
+
+    logger.info(f"Generate PDF release: version={version}, confidential={confidential}")
+
+    try:
+        # Find the generate-docs-pdf.sh script
+        script_path = docs_root.parent / "scripts" / "generate-docs-pdf.sh"
+
+        if not script_path.exists():
+            # Try alternative locations
+            for alt_path in [
+                Path(__file__).parent.parent.parent / "scripts" / "generate-docs-pdf.sh",
+                Path.cwd() / "scripts" / "generate-docs-pdf.sh",
+            ]:
+                if alt_path.exists():
+                    script_path = alt_path
+                    break
+
+        if not script_path.exists():
+            return {
+                "success": False,
+                "error": f"PDF generation script not found. Expected at: {script_path}",
+            }
+
+        # Build command
+        cmd = [str(script_path)]
+        if version:
+            cmd.append(version)
+        if confidential:
+            cmd.append("--confidential")
+
+        # Run the script asynchronously
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=str(docs_root.parent) if docs_root.parent.exists() else str(Path.cwd()),
+        )
+
+        stdout, stderr = await process.communicate()
+
+        if process.returncode != 0:
+            error_msg = stderr.decode() if stderr else "Unknown error"
+            return {
+                "success": False,
+                "error": f"PDF generation failed: {error_msg}",
+                "stdout": stdout.decode() if stdout else "",
+            }
+
+        # Parse output to find generated files
+        output_text = stdout.decode()
+        output_file = None
+        manifest_file = None
+
+        for line in output_text.split("\n"):
+            if line.startswith("Output:"):
+                output_file = line.replace("Output:", "").strip()
+            elif line.startswith("Manifest:"):
+                manifest_file = line.replace("Manifest:", "").strip()
+
+        return {
+            "success": True,
+            "output_file": output_file,
+            "manifest_file": manifest_file,
+            "version": version or "auto",
+            "confidential": confidential,
+            "message": "PDF documentation release generated successfully",
+        }
+
+    except Exception as e:
+        logger.error(f"PDF generation failed: {e}")
+        return {"success": False, "error": str(e)}
