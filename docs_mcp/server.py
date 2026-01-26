@@ -236,6 +236,7 @@ class DocumentationMCPServer:
 
             elif name == "generate_pdf_release":
                 from pathlib import Path
+
                 result = await tools.handle_generate_pdf_release(
                     arguments, Path(self.config.docs_root)
                 )

@@ -2,7 +2,6 @@
 
 import asyncio
 import os
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -290,7 +289,9 @@ async def handle_generate_pdf_release(
     confidential = arguments.get("confidential", False)
     owner = arguments.get("owner")
 
-    logger.info(f"Generate PDF release: version={version}, confidential={confidential}, title={title}")
+    logger.info(
+        f"Generate PDF release: version={version}, confidential={confidential}, title={title}"
+    )
 
     try:
         # Find the generate-docs-pdf.sh script

@@ -1,7 +1,6 @@
 """Unit tests for MCP tool handlers."""
 
 from datetime import datetime, timezone
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -908,7 +907,7 @@ class TestHandleGeneratePdfRelease:
             mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
             mock_subprocess.return_value = mock_process
 
-            result = await handle_generate_pdf_release(arguments, mock_docs_root)
+            await handle_generate_pdf_release(arguments, mock_docs_root)
 
             # Verify subtitle was passed in the command
             call_args = mock_subprocess.call_args
@@ -932,7 +931,7 @@ class TestHandleGeneratePdfRelease:
             mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
             mock_subprocess.return_value = mock_process
 
-            result = await handle_generate_pdf_release(arguments, mock_docs_root)
+            await handle_generate_pdf_release(arguments, mock_docs_root)
 
             call_args = mock_subprocess.call_args
             cmd = call_args[0] if call_args else []
@@ -981,9 +980,7 @@ class TestHandleGeneratePdfRelease:
         """Test exception handling during PDF generation."""
         arguments = {"version": "1.0.0"}
 
-        with patch(
-            "docs_mcp.handlers.tools.asyncio.create_subprocess_exec"
-        ) as mock_subprocess:
+        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
             mock_subprocess.side_effect = Exception("Subprocess error")
 
             result = await handle_generate_pdf_release(arguments, mock_docs_root)
@@ -1061,7 +1058,7 @@ class TestHandleGeneratePdfRelease:
     async def test_generate_pdf_with_special_characters_in_metadata(self, mock_docs_root):
         """Test handling of special characters in metadata fields."""
         arguments = {
-            "title": "Test's \"Documentation\"",
+            "title": 'Test\'s "Documentation"',
             "subtitle": "Guide & Reference",
             "author": "O'Brien, Inc.",
             "version": "1.0.0",
