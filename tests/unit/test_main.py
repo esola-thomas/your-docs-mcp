@@ -35,7 +35,7 @@ class TestMain:
         # Mock functions to avoid actually starting the server
         with patch("docs_mcp.__main__.load_config", return_value=mock_config):
             with patch("docs_mcp.__main__.setup_logging"):
-                with patch("docs_mcp.__main__.serve", new_callable=AsyncMock) as mock_serve:
+                with patch("docs_mcp.__main__.serve_both", new_callable=AsyncMock) as mock_serve:
                     try:
                         main()
                     except SystemExit:
@@ -51,12 +51,12 @@ class TestMain:
 
         mock_config = ServerConfig(docs_root=str(docs_dir))
 
-        # Mock serve to raise KeyboardInterrupt
+        # Mock serve_both to raise KeyboardInterrupt
         mock_serve = AsyncMock(side_effect=KeyboardInterrupt)
 
         with patch("docs_mcp.__main__.load_config", return_value=mock_config):
             with patch("docs_mcp.__main__.setup_logging"):
-                with patch("docs_mcp.__main__.serve", mock_serve):
+                with patch("docs_mcp.__main__.serve_both", mock_serve):
                     with pytest.raises(SystemExit) as exc_info:
                         main()
 
@@ -72,12 +72,12 @@ class TestMain:
 
         mock_config = ServerConfig(docs_root=str(docs_dir))
 
-        # Mock serve to raise general exception
+        # Mock serve_both to raise general exception
         mock_serve = AsyncMock(side_effect=Exception("Test error"))
 
         with patch("docs_mcp.__main__.load_config", return_value=mock_config):
             with patch("docs_mcp.__main__.setup_logging"):
-                with patch("docs_mcp.__main__.serve", mock_serve):
+                with patch("docs_mcp.__main__.serve_both", mock_serve):
                     with pytest.raises(SystemExit) as exc_info:
                         main()
 
@@ -95,7 +95,7 @@ class TestMain:
 
         with patch("docs_mcp.__main__.load_config", return_value=mock_config):
             with patch("docs_mcp.__main__.setup_logging") as mock_setup:
-                with patch("docs_mcp.__main__.serve", new_callable=AsyncMock):
+                with patch("docs_mcp.__main__.serve_both", new_callable=AsyncMock):
                     try:
                         main()
                     except SystemExit:
@@ -112,7 +112,7 @@ class TestMain:
 
         with patch("docs_mcp.__main__.load_config", return_value=mock_config) as mock_load:
             with patch("docs_mcp.__main__.setup_logging"):
-                with patch("docs_mcp.__main__.serve", new_callable=AsyncMock):
+                with patch("docs_mcp.__main__.serve_both", new_callable=AsyncMock):
                     try:
                         main()
                     except SystemExit:

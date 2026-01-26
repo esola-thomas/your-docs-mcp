@@ -159,6 +159,44 @@ class DocumentationMCPServer:
                         },
                     },
                 ),
+                Tool(
+                    name="generate_pdf_release",
+                    description=(
+                        "Generate a PDF documentation release. Creates a formatted PDF "
+                        "with all documentation, table of contents, and optional "
+                        "confidentiality markings (watermark, headers, footers)."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "title": {
+                                "type": "string",
+                                "description": "Document title. Defaults to project name.",
+                            },
+                            "subtitle": {
+                                "type": "string",
+                                "description": "Document subtitle (optional).",
+                            },
+                            "author": {
+                                "type": "string",
+                                "description": "Document author. Defaults to 'Documentation Team'.",
+                            },
+                            "version": {
+                                "type": "string",
+                                "description": "Version string for the release (e.g., '2.0.0'). Defaults to current date.",
+                            },
+                            "confidential": {
+                                "type": "boolean",
+                                "description": "Add confidentiality markings (watermark, headers, footers). Default: false",
+                                "default": False,
+                            },
+                            "owner": {
+                                "type": "string",
+                                "description": "Copyright owner (shown when confidential=true). Defaults to project name.",
+                            },
+                        },
+                    },
+                ),
             ]
 
         @self.server.call_tool()
@@ -194,6 +232,14 @@ class DocumentationMCPServer:
 
             elif name == "get_all_tags":
                 result = await tools.handle_get_all_tags(arguments, self.documents)
+                return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+            elif name == "generate_pdf_release":
+                from pathlib import Path
+
+                result = await tools.handle_generate_pdf_release(
+                    arguments, Path(self.config.docs_root)
+                )
                 return [{"type": "text", "text": json.dumps(result, indent=2)}]
 
             else:

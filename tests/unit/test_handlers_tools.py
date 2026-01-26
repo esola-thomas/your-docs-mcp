@@ -1,11 +1,12 @@
 """Unit tests for MCP tool handlers."""
 
 from datetime import datetime, timezone
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from docs_mcp.handlers.tools import (
+    handle_generate_pdf_release,
     handle_get_all_tags,
     handle_get_document,
     handle_get_table_of_contents,
@@ -817,3 +818,259 @@ class TestHandleGetAllTags:
         result = await handle_get_all_tags(arguments, None)  # type: ignore
 
         assert "error" in result
+
+
+class TestHandleGeneratePdfRelease:
+    """Test handle_generate_pdf_release function."""
+
+    @pytest.fixture
+    def mock_docs_root(self, tmp_path):
+        """Create a mock docs root directory with a script."""
+        docs_root = tmp_path / "docs"
+        docs_root.mkdir()
+        scripts_dir = tmp_path / "scripts"
+        scripts_dir.mkdir()
+        script_path = scripts_dir / "generate-docs-pdf.sh"
+        script_path.write_text("#!/bin/bash\necho 'PDF generated'\n")
+        script_path.chmod(0o755)
+        return docs_root
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_with_all_metadata(self, mock_docs_root):
+        """Test generating PDF with all metadata fields."""
+        arguments = {
+            "title": "Test Documentation",
+            "subtitle": "Complete Guide",
+            "author": "Test Author",
+            "version": "1.0.0",
+            "confidential": True,
+            "owner": "Test Corp",
+        }
+
+        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+            # Mock successful process execution
+            mock_process = MagicMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
+            mock_subprocess.return_value = mock_process
+
+            result = await handle_generate_pdf_release(arguments, mock_docs_root)
+
+            assert result["success"] is True
+            assert "output_file" in result
+            assert "manifest_file" in result
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_with_minimal_arguments(self, mock_docs_root):
+        """Test generating PDF with minimal arguments (only version)."""
+        arguments = {"version": "2.0.0"}
+
+        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_process = MagicMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
+            mock_subprocess.return_value = mock_process
+
+            result = await handle_generate_pdf_release(arguments, mock_docs_root)
+
+            assert result["success"] is True
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_default_version(self, mock_docs_root):
+        """Test generating PDF without version (uses current date)."""
+        arguments = {"title": "My Docs"}
+
+        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_process = MagicMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
+            mock_subprocess.return_value = mock_process
+
+            result = await handle_generate_pdf_release(arguments, mock_docs_root)
+
+            assert result["success"] is True
+            # Should use default version (current date)
+            assert "output_file" in result
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_subtitle_included_in_command(self, mock_docs_root):
+        """Test that subtitle parameter is properly passed to script."""
+        arguments = {
+            "title": "My Docs",
+            "subtitle": "Technical Guide",
+            "version": "1.0.0",
+        }
+
+        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_process = MagicMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
+            mock_subprocess.return_value = mock_process
+
+            await handle_generate_pdf_release(arguments, mock_docs_root)
+
+            # Verify subtitle was passed in the command
+            call_args = mock_subprocess.call_args
+            cmd = call_args[0] if call_args else []
+            # Should contain --subtitle flag
+            assert "--subtitle" in cmd
+            assert "Technical Guide" in cmd
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_confidential_flag(self, mock_docs_root):
+        """Test that confidential flag is properly passed."""
+        arguments = {
+            "version": "1.0.0",
+            "confidential": True,
+            "owner": "ACME Corp",
+        }
+
+        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_process = MagicMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
+            mock_subprocess.return_value = mock_process
+
+            await handle_generate_pdf_release(arguments, mock_docs_root)
+
+            call_args = mock_subprocess.call_args
+            cmd = call_args[0] if call_args else []
+            assert "--confidential" in cmd
+            assert "--owner" in cmd
+            assert "ACME Corp" in cmd
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_script_not_found(self, tmp_path):
+        """Test error handling when script is not found."""
+        docs_root = tmp_path / "docs"
+        docs_root.mkdir()
+        # Don't create scripts directory - and mock path checking to ensure script isn't found
+
+        arguments = {"version": "1.0.0"}
+
+        # Patch all possible script locations to not exist
+        with patch("docs_mcp.handlers.tools.Path.exists", return_value=False):
+            result = await handle_generate_pdf_release(arguments, docs_root)
+
+            assert result["success"] is False
+            assert "error" in result
+            assert "script not found" in result["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_script_execution_failed(self, mock_docs_root):
+        """Test error handling when script execution fails."""
+        arguments = {"version": "1.0.0"}
+
+        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_process = MagicMock()
+            mock_process.returncode = 1
+            mock_process.communicate = AsyncMock(
+                return_value=(b"", b"Error: PDF generation failed")
+            )
+            mock_subprocess.return_value = mock_process
+
+            result = await handle_generate_pdf_release(arguments, mock_docs_root)
+
+            assert result["success"] is False
+            assert "error" in result
+            assert "pdf generation failed" in result["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_handles_exception(self, mock_docs_root):
+        """Test exception handling during PDF generation."""
+        arguments = {"version": "1.0.0"}
+
+        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_subprocess.side_effect = Exception("Subprocess error")
+
+            result = await handle_generate_pdf_release(arguments, mock_docs_root)
+
+            assert result["success"] is False
+            assert "error" in result
+            assert "subprocess error" in result["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_empty_arguments(self, mock_docs_root):
+        """Test generating PDF with empty arguments dictionary."""
+        arguments = {}
+
+        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_process = MagicMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
+            mock_subprocess.return_value = mock_process
+
+            result = await handle_generate_pdf_release(arguments, mock_docs_root)
+
+            # Should still work with defaults
+            assert result["success"] is True
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_command_structure(self, mock_docs_root):
+        """Test that command is properly structured with all parameters."""
+        arguments = {
+            "title": "Docs",
+            "subtitle": "Guide",
+            "author": "Team",
+            "version": "1.0.0",
+            "confidential": False,
+        }
+
+        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_process = MagicMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
+            mock_subprocess.return_value = mock_process
+
+            await handle_generate_pdf_release(arguments, mock_docs_root)
+
+            call_args = mock_subprocess.call_args[0]
+            # Should have script path as first argument
+            assert str(call_args[0]).endswith("generate-docs-pdf.sh")
+            # Should have all flags
+            assert "--title" in call_args
+            assert "--subtitle" in call_args
+            assert "--author" in call_args
+            # Confidential=False should not add --confidential flag
+            assert "--confidential" not in call_args
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_result_format(self, mock_docs_root):
+        """Test that result has correct format on success."""
+        arguments = {"version": "1.0.0"}
+
+        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_process = MagicMock()
+            mock_process.returncode = 0
+            stdout = "Done\nOutput: /path/to/output.pdf\nManifest: /path/to/manifest.json"
+            mock_process.communicate = AsyncMock(return_value=(stdout.encode(), b""))
+            mock_subprocess.return_value = mock_process
+
+            result = await handle_generate_pdf_release(arguments, mock_docs_root)
+
+            assert "success" in result
+            assert "output_file" in result
+            assert "manifest_file" in result
+            assert result["output_file"] == "/path/to/output.pdf"
+            assert result["manifest_file"] == "/path/to/manifest.json"
+
+    @pytest.mark.asyncio
+    async def test_generate_pdf_with_special_characters_in_metadata(self, mock_docs_root):
+        """Test handling of special characters in metadata fields."""
+        arguments = {
+            "title": 'Test\'s "Documentation"',
+            "subtitle": "Guide & Reference",
+            "author": "O'Brien, Inc.",
+            "version": "1.0.0",
+        }
+
+        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_process = MagicMock()
+            mock_process.returncode = 0
+            mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
+            mock_subprocess.return_value = mock_process
+
+            result = await handle_generate_pdf_release(arguments, mock_docs_root)
+
+            # Should handle special characters without errors
+            assert result["success"] is True
