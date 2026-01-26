@@ -1,37 +1,100 @@
 #!/bin/bash
 # Generate PDF documentation release with optional confidentiality markings
-# Requires: pandoc, xelatex (texlive-xetex)
+# Dynamically discovers all markdown files in DOCS_ROOT
 #
-# Usage: ./scripts/generate-docs-pdf.sh [version] [--confidential]
-# Example: ./scripts/generate-docs-pdf.sh 2.0.0
-# Example: ./scripts/generate-docs-pdf.sh 2.0.0 --confidential
+# Usage: ./scripts/generate-docs-pdf.sh [options] [version]
+# Options:
+#   --confidential         Enable confidentiality watermarks and notices
+#   --title "Title"        Document title (default: PROJECT_NAME Documentation)
+#   --subtitle "Subtitle"  Document subtitle
+#   --author "Author"      Document author
+#   --owner "Owner"        Copyright owner (for confidentiality notices)
+#
+# Examples:
+#   ./scripts/generate-docs-pdf.sh 2.0.0
+#   ./scripts/generate-docs-pdf.sh 2.0.0 --confidential --title "API Reference"
+#   ./scripts/generate-docs-pdf.sh --title "My Docs" --author "My Company" 1.0.0
+#
+# Environment:
+#   DOCS_ROOT - Documentation directory (default: ./docs)
+#   PROJECT_NAME - Project name for the PDF (default: your-docs-mcp)
 
 set -e
 
-PROJECT_NAME="your-docs-mcp"
+# Configuration from environment or defaults
+DOCS_ROOT="${DOCS_ROOT:-./docs}"
+PROJECT_NAME="${PROJECT_NAME:-your-docs-mcp}"
 OUTPUT_DIR="releases"
 TIMESTAMP=$(date +%Y-%m-%d)
 YEAR=$(date +%Y)
+
+# Defaults for customizable fields
+DOC_TITLE=""
+DOC_SUBTITLE="Complete Documentation Release"
+DOC_AUTHOR=""
+DOC_OWNER=""
 
 # Parse arguments
 VERSION=""
 CONFIDENTIAL=false
 
-for arg in "$@"; do
-    case $arg in
+while [[ $# -gt 0 ]]; do
+    case $1 in
         --confidential)
             CONFIDENTIAL=true
             shift
             ;;
+        --title)
+            DOC_TITLE="$2"
+            shift 2
+            ;;
+        --subtitle)
+            DOC_SUBTITLE="$2"
+            shift 2
+            ;;
+        --author)
+            DOC_AUTHOR="$2"
+            shift 2
+            ;;
+        --owner)
+            DOC_OWNER="$2"
+            shift 2
+            ;;
+        --help|-h)
+            echo "Usage: $0 [options] [version]"
+            echo ""
+            echo "Options:"
+            echo "  --confidential         Enable confidentiality watermarks and notices"
+            echo "  --title \"Title\"        Document title"
+            echo "  --subtitle \"Subtitle\"  Document subtitle"
+            echo "  --author \"Author\"      Document author"
+            echo "  --owner \"Owner\"        Copyright owner"
+            echo "  --help                 Show this help message"
+            echo ""
+            echo "Environment Variables:"
+            echo "  DOCS_ROOT     Documentation directory (default: ./docs)"
+            echo "  PROJECT_NAME  Project name (default: your-docs-mcp)"
+            exit 0
+            ;;
+        -*)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
         *)
             if [[ -z "$VERSION" ]]; then
-                VERSION="$arg"
+                VERSION="$1"
             fi
+            shift
             ;;
     esac
 done
 
 VERSION="${VERSION:-$(date +%Y.%m.%d)}"
+
+# Apply defaults where not specified
+DOC_TITLE="${DOC_TITLE:-${PROJECT_NAME} Documentation}"
+DOC_AUTHOR="${DOC_AUTHOR:-${PROJECT_NAME}}"
+DOC_OWNER="${DOC_OWNER:-${PROJECT_NAME}}"
 
 # Colors
 GREEN='\033[0;32m'
@@ -40,11 +103,22 @@ RED='\033[0;31m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-echo -e "${BLUE}Generating ${PROJECT_NAME} Documentation v${VERSION}${NC}"
+echo -e "${BLUE}Generating Documentation PDF${NC}"
+echo -e "${BLUE}  Title: ${DOC_TITLE}${NC}"
+echo -e "${BLUE}  Version: v${VERSION}${NC}"
+echo -e "${BLUE}  Author: ${DOC_AUTHOR}${NC}"
+echo -e "${BLUE}  Source: ${DOCS_ROOT}${NC}"
 if [[ "$CONFIDENTIAL" == "true" ]]; then
-    echo -e "${RED}Confidentiality markings: ENABLED${NC}"
+    echo -e "${RED}  Confidentiality: ENABLED (Owner: ${DOC_OWNER})${NC}"
 else
-    echo -e "${GREEN}Confidentiality markings: disabled (use --confidential to enable)${NC}"
+    echo -e "${GREEN}  Confidentiality: disabled${NC}"
+fi
+
+# Validate DOCS_ROOT exists
+if [[ ! -d "$DOCS_ROOT" ]]; then
+    echo -e "${RED}Error: DOCS_ROOT directory not found: ${DOCS_ROOT}${NC}"
+    echo "Set DOCS_ROOT environment variable to your documentation directory"
+    exit 1
 fi
 
 # Check for pandoc
@@ -87,10 +161,7 @@ if [[ -n "$PYTHON" ]] && [[ -f "$ASCII2IMG" ]]; then
         echo -e "${GREEN}ASCII art conversion: enabled${NC}"
     else
         echo -e "${YELLOW}Warning: Pillow not installed. ASCII diagrams may not render correctly.${NC}"
-        echo -e "${YELLOW}Install with: pip install Pillow${NC}"
     fi
-else
-    echo -e "${YELLOW}Warning: ASCII art converter not available. Diagrams may not render correctly.${NC}"
 fi
 
 # Create output directory and temp workspace
@@ -105,291 +176,211 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Create combined markdown file with proper ordering
+# Create combined markdown file
 COMBINED_MD="$WORK_DIR/combined.md"
 TITLE_PAGE="$WORK_DIR/title.md"
 LATEX_HEADER="$WORK_DIR/header.tex"
 
 # Generate LaTeX header based on confidentiality setting
 if [[ "$CONFIDENTIAL" == "true" ]]; then
-    # LaTeX header for confidentiality markings (headers, footers, watermarks)
-    cat > "$LATEX_HEADER" << 'LATEX_EOF'
-% Confidentiality headers and footers
+    cat > "$LATEX_HEADER" << LATEX_EOF
 \usepackage{fancyhdr}
 \usepackage{lastpage}
 \usepackage{xcolor}
 \usepackage{draftwatermark}
-
-% Watermark configuration
 \SetWatermarkText{CONFIDENTIAL}
 \SetWatermarkScale{0.5}
 \SetWatermarkColor[gray]{0.9}
 \SetWatermarkAngle{45}
-
-% Page style with headers and footers
 \pagestyle{fancy}
 \fancyhf{}
-
-% Header
-\fancyhead[L]{\small\textcolor{red}{\textbf{PROJECT_NAME_PLACEHOLDER — CONFIDENTIAL \& PROPRIETARY}}}
-\fancyhead[R]{\small\textit{vVERSION_PLACEHOLDER}}
-
-% Footer
-\fancyfoot[L]{\small\textcolor{gray}{© YEAR_PLACEHOLDER PROJECT_NAME_PLACEHOLDER All Rights Reserved.}}
+\fancyhead[L]{\small\textcolor{red}{\textbf{${DOC_OWNER} — CONFIDENTIAL}}}
+\fancyhead[R]{\small\textit{v${VERSION}}}
+\fancyfoot[L]{\small\textcolor{gray}{© ${YEAR} ${DOC_OWNER}}}
 \fancyfoot[C]{\small\textcolor{red}{\textbf{DO NOT DISTRIBUTE}}}
 \fancyfoot[R]{\small Page \thepage\ of \pageref{LastPage}}
-
-% Reduce header/footer rule visibility
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.4pt}
-
-% Apply to plain pages (chapter starts, TOC)
-\fancypagestyle{plain}{
-  \fancyhf{}
-  \fancyhead[L]{\small\textcolor{red}{\textbf{PROJECT_NAME_PLACEHOLDER — CONFIDENTIAL \& PROPRIETARY}}}
-  \fancyhead[R]{\small\textit{vVERSION_PLACEHOLDER}}
-  \fancyfoot[L]{\small\textcolor{gray}{© YEAR_PLACEHOLDER PROJECT_NAME_PLACEHOLDER All Rights Reserved.}}
-  \fancyfoot[C]{\small\textcolor{red}{\textbf{DO NOT DISTRIBUTE}}}
-  \fancyfoot[R]{\small Page \thepage\ of \pageref{LastPage}}
-  \renewcommand{\headrulewidth}{0.4pt}
-  \renewcommand{\footrulewidth}{0.4pt}
-}
+\fancypagestyle{plain}{\fancyhf{}\fancyhead[L]{\small\textcolor{red}{\textbf{${DOC_OWNER} — CONFIDENTIAL}}}\fancyhead[R]{\small\textit{v${VERSION}}}\fancyfoot[L]{\small\textcolor{gray}{© ${YEAR} ${DOC_OWNER}}}\fancyfoot[C]{\small\textcolor{red}{\textbf{DO NOT DISTRIBUTE}}}\fancyfoot[R]{\small Page \thepage\ of \pageref{LastPage}}\renewcommand{\headrulewidth}{0.4pt}\renewcommand{\footrulewidth}{0.4pt}}
 LATEX_EOF
-
-    # Substitute placeholders in LaTeX header
-    sed -i "s/PROJECT_NAME_PLACEHOLDER/${PROJECT_NAME}/g" "$LATEX_HEADER"
-    sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" "$LATEX_HEADER"
-    sed -i "s/YEAR_PLACEHOLDER/${YEAR}/g" "$LATEX_HEADER"
-
-    # Title page with confidentiality notice
-    cat > "$TITLE_PAGE" << EOF
----
-title: "${PROJECT_NAME} Technical Documentation"
-subtitle: "MCP Server for AI-Powered Documentation Navigation"
-author: "${PROJECT_NAME} Contributors"
-date: "${TIMESTAMP}"
-version: "v${VERSION}"
----
-
-\\begin{center}
-\\vspace*{1cm}
-
-{\\Huge\\textbf{CONFIDENTIAL}}
-
-\\vspace{0.5cm}
-
-{\\large\\textcolor{red}{PROPRIETARY \\& TRADE SECRET INFORMATION}}
-
-\\vspace{1cm}
-
-\\rule{\\textwidth}{0.4pt}
-
-\\vspace{0.5cm}
-
-{\\small
-This document contains confidential and proprietary information belonging exclusively to \\textbf{${PROJECT_NAME}}
-
-\\vspace{0.3cm}
-
-\\textbf{NOTICE:} This material is protected by copyright and trade secret laws. Unauthorized reproduction, distribution, or disclosure of this document or any portion thereof is strictly prohibited and may result in severe civil and criminal penalties.
-
-\\vspace{0.3cm}
-
-This document is provided under Non-Disclosure Agreement (NDA) to authorized recipients only.
-
-\\vspace{0.5cm}
-
-\\textbf{Document Classification:} CONFIDENTIAL \\\\
-\\textbf{Document Version:} v${VERSION} \\\\
-\\textbf{Generated:} ${TIMESTAMP} \\\\
-\\textbf{Owner:} ${PROJECT_NAME}
-
-}
-
-\\vspace{0.5cm}
-
-\\rule{\\textwidth}{0.4pt}
-
-\\vspace{1cm}
-
-{\\footnotesize © ${YEAR} ${PROJECT_NAME} All rights reserved.}
-
-\\end{center}
-
-\\newpage
-
-# Table of Contents
-
-\\newpage
-
-EOF
 else
-    # Simple header without confidentiality markings
-    cat > "$LATEX_HEADER" << 'LATEX_EOF'
-% Simple page style
+    cat > "$LATEX_HEADER" << LATEX_EOF
 \usepackage{fancyhdr}
 \usepackage{lastpage}
-
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\textit{PROJECT_NAME_PLACEHOLDER Documentation}}
-\fancyhead[R]{\small\textit{vVERSION_PLACEHOLDER}}
+\fancyhead[L]{\small\textit{${DOC_TITLE}}}
+\fancyhead[R]{\small\textit{v${VERSION}}}
 \fancyfoot[C]{\small Page \thepage\ of \pageref{LastPage}}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0pt}
-
-\fancypagestyle{plain}{
-  \fancyhf{}
-  \fancyhead[L]{\small\textit{PROJECT_NAME_PLACEHOLDER Documentation}}
-  \fancyhead[R]{\small\textit{vVERSION_PLACEHOLDER}}
-  \fancyfoot[C]{\small Page \thepage\ of \pageref{LastPage}}
-  \renewcommand{\headrulewidth}{0.4pt}
-  \renewcommand{\footrulewidth}{0pt}
-}
+\fancypagestyle{plain}{\fancyhf{}\fancyhead[L]{\small\textit{${DOC_TITLE}}}\fancyhead[R]{\small\textit{v${VERSION}}}\fancyfoot[C]{\small Page \thepage\ of \pageref{LastPage}}\renewcommand{\headrulewidth}{0.4pt}\renewcommand{\footrulewidth}{0pt}}
 LATEX_EOF
+fi
 
-    sed -i "s/PROJECT_NAME_PLACEHOLDER/${PROJECT_NAME}/g" "$LATEX_HEADER"
-    sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" "$LATEX_HEADER"
-
-    # Simple title page
-    cat > "$TITLE_PAGE" << EOF
+# Title page
+cat > "$TITLE_PAGE" << EOF
 ---
-title: "${PROJECT_NAME} Documentation"
-subtitle: "MCP Server for AI-Powered Documentation Navigation"
-author: "${PROJECT_NAME} Contributors"
+title: "${DOC_TITLE}"
+subtitle: "${DOC_SUBTITLE}"
+author: "${DOC_AUTHOR}"
 date: "${TIMESTAMP}"
-version: "v${VERSION}"
 ---
 
-\\newpage
-
-# Table of Contents
-
-\\newpage
+\newpage
 
 EOF
-fi
 
 cat "$TITLE_PAGE" > "$COMBINED_MD"
 
-# Add documents in logical order
-echo -e "${GREEN}Collecting documentation...${NC}"
+echo -e "${GREEN}Collecting documentation from ${DOCS_ROOT}...${NC}"
 
-# Function to add section with header (with ASCII art preprocessing)
-add_section() {
+# Function to extract title from markdown file
+get_title() {
+    local file="$1"
+    local title=$(sed -n '/^---$/,/^---$/p' "$file" 2>/dev/null | grep -E '^title:' | head -1 | sed 's/^title:[[:space:]]*//' | sed 's/^["'"'"']//' | sed 's/["'"'"']$//')
+    if [[ -z "$title" ]]; then
+        title=$(grep -m1 '^# ' "$file" 2>/dev/null | sed 's/^# //')
+    fi
+    if [[ -z "$title" ]]; then
+        title=$(basename "$file" .md | sed 's/-/ /g' | sed 's/_/ /g')
+    fi
+    echo "$title"
+}
+
+# Function to remove YAML frontmatter (only the first --- block at start of file)
+# This handles cases where --- appears later in the document as a separator
+remove_frontmatter() {
+    awk 'BEGIN{skip=0} NR==1 && /^---$/{skip=1; next} skip==1 && /^---$/{skip=0; next} !skip' "$@"
+}
+
+# Function to add a markdown file
+add_file() {
     local file="$1"
     local title="$2"
+    
     if [[ -f "$file" ]]; then
         echo "" >> "$COMBINED_MD"
-        echo "# $title" >> "$COMBINED_MD"
+        echo "## $title" >> "$COMBINED_MD"
         echo "" >> "$COMBINED_MD"
         
-        # Preprocess ASCII art if enabled
         if [[ "$CONVERT_ASCII" == "true" ]]; then
-            # Process file to convert ASCII art to images
-            local processed_file="$WORK_DIR/$(basename "$file")"
-            "$PYTHON" "$ASCII2IMG" "$file" "$processed_file" --img-dir "$IMG_DIR" 2>/dev/null || true
-            if [[ -f "$processed_file" ]]; then
-                # Remove YAML frontmatter, strip emojis, and add to combined
-                sed '/^---$/,/^---$/d' "$processed_file" | \
-                    sed 's/📚/[DOC]/g; s/🚀/[LAUNCH]/g; s/✅/[OK]/g; s/❌/[X]/g; s/⚠️/[WARN]/g; s/📋/[LIST]/g; s/✓/[v]/g; s/≤/<=/g' >> "$COMBINED_MD"
-            else
-                sed '/^---$/,/^---$/d' "$file" | \
-                    sed 's/📚/[DOC]/g; s/🚀/[LAUNCH]/g; s/✅/[OK]/g; s/❌/[X]/g; s/⚠️/[WARN]/g; s/📋/[LIST]/g; s/✓/[v]/g; s/≤/<=/g' >> "$COMBINED_MD"
-            fi
+            # Create unique filename using relative path to avoid overwrites
+            # e.g., architecture/overview.md -> architecture_overview.md
+            local rel_path="${file#$DOCS_ROOT/}"
+            local unique_name=$(echo "$rel_path" | sed 's|/|_|g' | sed 's/[^a-zA-Z0-9._-]/_/g')
+            local processed_file="$WORK_DIR/$unique_name"
+            "$PYTHON" "$ASCII2IMG" "$file" "$processed_file" --img-dir "$IMG_DIR" 2>/dev/null || cp "$file" "$processed_file"
+            remove_frontmatter "$processed_file" | sed 's/📚/[DOC]/g; s/🚀/[LAUNCH]/g; s/✅/[OK]/g; s/❌/[X]/g; s/⚠️/[WARN]/g; s/📋/[LIST]/g; s/✓/[v]/g; s/🔧/[TOOL]/g; s/📦/[PKG]/g; s/🌐/[WEB]/g; s/💡/[IDEA]/g; s/⭐/[STAR]/g; s/🎯/[TARGET]/g; s/🔍/[SEARCH]/g; s/📝/[NOTE]/g; s/🛡️/[SECURE]/g; s/⚡/[FAST]/g; s/🔑/[KEY]/g; s/📊/[CHART]/g; s/🔄/[REFRESH]/g; s/➡️/->/g; s/⬅️/<-/g; s/↔️/<->/g; s/🔗/[LINK]/g' >> "$COMBINED_MD"
         else
-            # Just remove YAML frontmatter and strip emojis
-            sed '/^---$/,/^---$/d' "$file" | \
-                sed 's/📚/[DOC]/g; s/🚀/[LAUNCH]/g; s/✅/[OK]/g; s/❌/[X]/g; s/⚠️/[WARN]/g; s/📋/[LIST]/g; s/✓/[v]/g; s/≤/<=/g' >> "$COMBINED_MD"
+            remove_frontmatter "$file" | sed 's/📚/[DOC]/g; s/🚀/[LAUNCH]/g; s/✅/[OK]/g; s/❌/[X]/g; s/⚠️/[WARN]/g; s/📋/[LIST]/g; s/✓/[v]/g; s/🔧/[TOOL]/g; s/📦/[PKG]/g; s/🌐/[WEB]/g; s/💡/[IDEA]/g; s/⭐/[STAR]/g; s/🎯/[TARGET]/g; s/🔍/[SEARCH]/g; s/📝/[NOTE]/g; s/🛡️/[SECURE]/g; s/⚡/[FAST]/g; s/🔑/[KEY]/g; s/📊/[CHART]/g; s/🔄/[REFRESH]/g; s/➡️/->/g; s/⬅️/<-/g; s/↔️/<->/g; s/🔗/[LINK]/g' >> "$COMBINED_MD"
         fi
         
         echo "" >> "$COMBINED_MD"
-        echo "\\newpage" >> "$COMBINED_MD"
+        echo "\newpage" >> "$COMBINED_MD"
         echo -e "  ${GREEN}Added:${NC} $title"
-    else
-        echo -e "  ${YELLOW}Skipped (not found):${NC} $file"
+        return 0
     fi
+    return 1
 }
 
-# Main README
-add_section "README.md" "Overview"
+# Count total markdown files
+TOTAL_FILES=$(find "$DOCS_ROOT" -name "*.md" -type f | wc -l)
+echo -e "${BLUE}Found ${TOTAL_FILES} markdown files${NC}"
 
-# Architecture Section
-echo "" >> "$COMBINED_MD"
-echo "# PART I: Architecture" >> "$COMBINED_MD"
-echo "" >> "$COMBINED_MD"
-add_section "docs/architecture/overview.md" "Architecture Overview"
-add_section "docs/architecture/mcp-protocol.md" "MCP Protocol Integration"
-add_section "docs/architecture/vector-db.md" "Vector Database Integration"
+FILE_COUNT=0
 
-# Guides Section
-echo "" >> "$COMBINED_MD"
-echo "# PART II: Guides" >> "$COMBINED_MD"
-echo "" >> "$COMBINED_MD"
-add_section "docs/guides/getting-started.md" "Getting Started"
-add_section "docs/guides/quickstart/installation.md" "Installation Guide"
-add_section "docs/guides/quickstart/configuration.md" "Configuration Guide"
-
-# API Section
-echo "" >> "$COMBINED_MD"
-echo "# PART III: API Reference" >> "$COMBINED_MD"
-echo "" >> "$COMBINED_MD"
-add_section "docs/api/rest.md" "REST API Reference"
-
-# Reference Section
-echo "" >> "$COMBINED_MD"
-echo "# PART IV: Reference" >> "$COMBINED_MD"
-echo "" >> "$COMBINED_MD"
-add_section "docs/reference/cli-commands.md" "CLI Commands Reference"
-
-# Development Section
-echo "" >> "$COMBINED_MD"
-echo "# PART V: Development" >> "$COMBINED_MD"
-echo "" >> "$COMBINED_MD"
-add_section "docs/development/contributing.md" "Contributing Guide"
-add_section "docs/development/testing.md" "Testing Guide"
-add_section "docs/ci-cd-integration.md" "CI/CD Integration"
-add_section "CHANGELOG.md" "Changelog"
-
-# Add confidentiality footer if enabled
-if [[ "$CONFIDENTIAL" == "true" ]]; then
-    cat >> "$COMBINED_MD" << EOF
-
----
-
-\\begin{center}
-\\textbf{END OF DOCUMENT}
-
-\\vspace{0.5cm}
-
-{\\small This document contains confidential information of ${PROJECT_NAME}
-
-Unauthorized use, reproduction, or distribution is strictly prohibited.}
-
-\\vspace{0.5cm}
-
-{\\footnotesize Document ID: ${PROJECT_NAME}-DOCS-v${VERSION}-$(date +%s | sha256sum | head -c 8)}
-\\end{center}
-EOF
+# Process README at root first
+if [[ -f "$DOCS_ROOT/README.md" ]]; then
+    title=$(get_title "$DOCS_ROOT/README.md")
+    add_file "$DOCS_ROOT/README.md" "$title"
+    ((++FILE_COUNT))
 fi
 
-# Generate PDF
-OUTPUT_FILE="$OUTPUT_DIR/${PROJECT_NAME}-docs-v${VERSION}.pdf"
+# Function to process a directory recursively
+# Strategy: Process in hierarchical order: README first, then files, then subdirectories
+process_directory() {
+    local dir="$1"
+    local depth="$2"
+    local dir_name=$(basename "$dir")
+    
+    # Discover all markdown files in current directory (excluding README)
+    local files=()
+    while IFS= read -r -d '' file; do
+        files+=("$file")
+    done < <(find "$dir" -maxdepth 1 -name "*.md" -type f ! -name "README.md" -print0 2>/dev/null | sort -z)
+    
+    # Discover all subdirectories
+    local subdirs=()
+    while IFS= read -r -d '' subdir; do
+        subdirs+=("$subdir")
+    done < <(find "$dir" -maxdepth 1 -mindepth 1 -type d -print0 2>/dev/null | sort -z)
+    
+    # Add section header for non-root directories with content
+    if [[ "$dir" != "$DOCS_ROOT" ]] && { [[ ${#files[@]} -gt 0 ]] || [[ ${#subdirs[@]} -gt 0 ]]; }; then
+        local section_title=$(echo "$dir_name" | sed 's/-/ /g' | sed 's/_/ /g' | sed 's/\b./\u&/g')
+        echo "" >> "$COMBINED_MD"
+        echo "# $section_title" >> "$COMBINED_MD"
+        echo "" >> "$COMBINED_MD"
+        echo -e "${BLUE}Section:${NC} $section_title"
+    fi
+    
+    # Process README first (overview/introduction for this section)
+    if [[ -f "$dir/README.md" ]] && [[ "$dir" != "$DOCS_ROOT" ]]; then
+        title=$(get_title "$dir/README.md")
+        add_file "$dir/README.md" "$title"
+        ((++FILE_COUNT))
+    fi
+    
+    # Process all other markdown files in alphabetical order
+    for file in "${files[@]}"; do
+        title=$(get_title "$file")
+        add_file "$file" "$title"
+        ((++FILE_COUNT))
+    done
+    
+    # Recursively process subdirectories (maintains hierarchy)
+    for subdir in "${subdirs[@]}"; do
+        process_directory "$subdir" $((depth + 1))
+    done
+}
+
+# Process the documentation directory
+process_directory "$DOCS_ROOT" 0
+
+echo -e "${GREEN}Processed ${FILE_COUNT} files${NC}"
+
+# Generate output filename from title or project name
+OUTPUT_NAME=$(echo "$DOC_TITLE" | sed 's/[^a-zA-Z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//' | tr '[:upper:]' '[:lower:]')
+OUTPUT_NAME="${OUTPUT_NAME:-${PROJECT_NAME}-docs}"
+OUTPUT_FILE="$OUTPUT_DIR/${OUTPUT_NAME}-v${VERSION}.pdf"
 
 echo -e "${GREEN}Generating PDF...${NC}"
-if [[ "$CONVERT_ASCII" == "true" ]]; then
-    echo -e "${BLUE}Converting ASCII diagrams to images...${NC}"
+
+# Use xelatex for better Unicode support, fallback gracefully
+if [[ "$PDF_ENGINE" == "xelatex" ]]; then
+    FONT_SETTINGS=(
+        -V mainfont="DejaVu Sans"
+        -V sansfont="DejaVu Sans"
+        -V monofont="DejaVu Sans Mono"
+    )
+else
+    FONT_SETTINGS=()
 fi
 
-# Build pandoc command
 PANDOC_ARGS=(
     "$COMBINED_MD"
     -o "$OUTPUT_FILE"
     --toc
     --toc-depth=3
     --pdf-engine="$PDF_ENGINE"
-    --resource-path="$WORK_DIR:$IMG_DIR"
+    --resource-path="$WORK_DIR:$IMG_DIR:$DOCS_ROOT"
     -H "$LATEX_HEADER"
+    --metadata "title=${DOC_TITLE}"
+    --metadata "subtitle=${DOC_SUBTITLE}"
+    --metadata "author=${DOC_AUTHOR}"
+    -V "subtitle=${DOC_SUBTITLE}"
+    "${FONT_SETTINGS[@]}"
     -V geometry:margin=1in
     -V documentclass=report
     -V fontsize=11pt
@@ -403,50 +394,33 @@ if [[ "$CONFIDENTIAL" == "true" ]]; then
     PANDOC_ARGS+=(-V geometry:top=1.2in -V geometry:bottom=1in)
 fi
 
-pandoc "${PANDOC_ARGS[@]}" || {
+pandoc "${PANDOC_ARGS[@]}" 2>&1 | tee "$WORK_DIR/pandoc.log" || {
     echo -e "${RED}Error: PDF generation failed${NC}"
-    echo "Check that texlive-xetex is installed: sudo apt install texlive-xetex texlive-latex-extra"
+    echo -e "${YELLOW}Pandoc log:${NC}"
+    cat "$WORK_DIR/pandoc.log"
     exit 1
 }
 
 # Create manifest
-if [[ "$CONFIDENTIAL" == "true" ]]; then
-    cat > "$OUTPUT_DIR/manifest-v${VERSION}.json" << EOF
+MANIFEST_FILE="$OUTPUT_DIR/manifest-${OUTPUT_NAME}-v${VERSION}.json"
+cat > "$MANIFEST_FILE" << EOF
 {
-    "project": "${PROJECT_NAME}",
+    "title": "${DOC_TITLE}",
+    "subtitle": "${DOC_SUBTITLE}",
+    "author": "${DOC_AUTHOR}",
+    "owner": "${DOC_OWNER}",
     "version": "${VERSION}",
     "generated": "${TIMESTAMP}",
-    "classification": "CONFIDENTIAL",
-    "distribution": "RESTRICTED - Authorized recipients only",
-    "files": [
-        "${PROJECT_NAME}-docs-v${VERSION}.pdf"
-    ],
-    "checksum": "$(sha256sum "$OUTPUT_FILE" 2>/dev/null | cut -d' ' -f1 || echo 'N/A')",
-    "notice": "This document contains confidential and proprietary information. Unauthorized distribution is prohibited."
-}
-EOF
-else
-    cat > "$OUTPUT_DIR/manifest-v${VERSION}.json" << EOF
-{
-    "project": "${PROJECT_NAME}",
-    "version": "${VERSION}",
-    "generated": "${TIMESTAMP}",
-    "files": [
-        "${PROJECT_NAME}-docs-v${VERSION}.pdf"
-    ],
+    "confidential": ${CONFIDENTIAL},
+    "source": "${DOCS_ROOT}",
+    "documents_included": ${FILE_COUNT},
+    "files": ["$(basename "$OUTPUT_FILE")"],
     "checksum": "$(sha256sum "$OUTPUT_FILE" 2>/dev/null | cut -d' ' -f1 || echo 'N/A')"
 }
 EOF
-fi
 
 echo ""
 echo -e "${GREEN}Done!${NC}"
 echo "Output: $OUTPUT_FILE"
-echo "Manifest: $OUTPUT_DIR/manifest-v${VERSION}.json"
-
-if [[ "$CONFIDENTIAL" == "true" ]]; then
-    echo ""
-    echo -e "${RED}CONFIDENTIAL DOCUMENT GENERATED${NC}"
-    echo "Classification: CONFIDENTIAL"
-    echo "Distribution: Authorized recipients under NDA only"
-fi
+echo "Manifest: $MANIFEST_FILE"
+echo "Documents included: ${FILE_COUNT}"

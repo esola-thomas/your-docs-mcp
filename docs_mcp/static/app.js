@@ -660,36 +660,97 @@ function showReleaseView() {
         <div class="card">
             <div class="card-header">
                 <h1 class="card-title">Generate PDF Release</h1>
-                <p class="card-subtitle">Create a PDF documentation release with optional confidentiality markings</p>
+                <p class="card-subtitle">Create a PDF documentation release with customizable metadata and optional confidentiality markings</p>
             </div>
 
             <div style="margin-bottom: 2rem;">
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-weight: 500;">
-                        Version (optional)
-                    </label>
-                    <input
-                        type="text"
-                        id="release-version-input"
-                        class="search-input"
-                        placeholder="e.g., 2.0.0 (defaults to current date)"
-                        style="max-width: 300px; padding: 0.75rem 1rem; font-size: 1rem;"
-                        autocomplete="off"
-                    >
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-weight: 500;">
+                            Document Title
+                        </label>
+                        <input
+                            type="text"
+                            id="release-title-input"
+                            class="search-input"
+                            placeholder="e.g., API Reference Documentation"
+                            style="width: 100%; padding: 0.75rem 1rem; font-size: 1rem;"
+                            autocomplete="off"
+                        >
+                    </div>
+
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-weight: 500;">
+                            Subtitle
+                        </label>
+                        <input
+                            type="text"
+                            id="release-subtitle-input"
+                            class="search-input"
+                            placeholder="e.g., Complete Documentation Release"
+                            style="width: 100%; padding: 0.75rem 1rem; font-size: 1rem;"
+                            autocomplete="off"
+                        >
+                    </div>
+
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-weight: 500;">
+                            Author
+                        </label>
+                        <input
+                            type="text"
+                            id="release-author-input"
+                            class="search-input"
+                            placeholder="e.g., Engineering Team"
+                            style="width: 100%; padding: 0.75rem 1rem; font-size: 1rem;"
+                            autocomplete="off"
+                        >
+                    </div>
+
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-weight: 500;">
+                            Version
+                        </label>
+                        <input
+                            type="text"
+                            id="release-version-input"
+                            class="search-input"
+                            placeholder="e.g., 2.0.0 (defaults to date)"
+                            style="width: 100%; padding: 0.75rem 1rem; font-size: 1rem;"
+                            autocomplete="off"
+                        >
+                    </div>
                 </div>
 
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; color: var(--text-secondary);">
+                <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-lg); margin-bottom: 1.5rem;">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer; color: var(--text-secondary);">
+                            <input
+                                type="checkbox"
+                                id="release-confidential-checkbox"
+                                style="width: 1.25rem; height: 1.25rem; cursor: pointer;"
+                                onchange="toggleOwnerField()"
+                            >
+                            <span>
+                                <strong style="color: var(--text-primary);">Add confidentiality markings</strong><br>
+                                <small>Includes watermark, headers, footers with "CONFIDENTIAL" notices</small>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div id="owner-field-container" style="display: none; margin-top: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-weight: 500;">
+                            Copyright Owner <small style="color: var(--text-tertiary);">(for confidentiality notices)</small>
+                        </label>
                         <input
-                            type="checkbox"
-                            id="release-confidential-checkbox"
-                            style="width: 1.25rem; height: 1.25rem; cursor: pointer;"
+                            type="text"
+                            id="release-owner-input"
+                            class="search-input"
+                            placeholder="e.g., Acme Corporation"
+                            style="max-width: 400px; padding: 0.75rem 1rem; font-size: 1rem;"
+                            autocomplete="off"
                         >
-                        <span>
-                            <strong style="color: var(--text-primary);">Add confidentiality markings</strong><br>
-                            <small>Includes watermark, headers, footers with "CONFIDENTIAL" notices</small>
-                        </span>
-                    </label>
+                    </div>
                 </div>
 
                 <button class="btn btn-primary" id="generate-pdf-btn" style="padding: 0.75rem 2rem;">
@@ -718,14 +779,28 @@ function showReleaseView() {
     document.getElementById('generate-pdf-btn').addEventListener('click', generatePDFRelease);
 }
 
+function toggleOwnerField() {
+    const checkbox = document.getElementById('release-confidential-checkbox');
+    const ownerContainer = document.getElementById('owner-field-container');
+    ownerContainer.style.display = checkbox.checked ? 'block' : 'none';
+}
+
 async function generatePDFRelease() {
+    const titleInput = document.getElementById('release-title-input');
+    const subtitleInput = document.getElementById('release-subtitle-input');
+    const authorInput = document.getElementById('release-author-input');
     const versionInput = document.getElementById('release-version-input');
     const confidentialCheckbox = document.getElementById('release-confidential-checkbox');
+    const ownerInput = document.getElementById('release-owner-input');
     const container = document.getElementById('release-result-container');
     const btn = document.getElementById('generate-pdf-btn');
 
+    const title = titleInput.value.trim() || null;
+    const subtitle = subtitleInput.value.trim() || null;
+    const author = authorInput.value.trim() || null;
     const version = versionInput.value.trim() || null;
     const confidential = confidentialCheckbox.checked;
+    const owner = ownerInput.value.trim() || null;
 
     // Disable button and show loading
     btn.disabled = true;
@@ -743,7 +818,7 @@ async function generatePDFRelease() {
         const response = await fetch('/api/generate-pdf', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ version, confidential }),
+            body: JSON.stringify({ title, subtitle, author, version, confidential, owner }),
         });
         const data = await response.json();
 

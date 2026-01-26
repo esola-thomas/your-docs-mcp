@@ -1,80 +1,76 @@
 # Documentation MCP Server
 
-> Turn your documentation into an intelligent, AI-accessible knowledge base
+A Model Context Protocol (MCP) server that enables AI assistants to navigate and query documentation through hierarchical structures, supporting markdown files with YAML frontmatter and OpenAPI 3.x specifications.
 
-Give AI assistants like Claude, ChatGPT, and Copilot structured access to your documentation through the Model Context Protocol (MCP). Navigate hierarchical docs, search semantically, generate PDFs, and browse via web interface—all from a single server.
+## Features
 
-## ⚡ Quick Start (60 seconds)
+- **Hierarchical Navigation**: Navigate documentation organized in nested directory structures with unlimited depth
+- **Markdown Support**: Parse markdown files with YAML frontmatter metadata (title, tags, category, order)
+- **OpenAPI Integration**: Load and query OpenAPI 3.x specifications as documentation resources
+- **Intelligent Search**: Full-text search with metadata filtering and hierarchical context
+- **Web Interface**: Built-in web server provides browser-based access to documentation with the same tools available to LLMs
+- **Cross-Platform**: Works with Claude Desktop, VS Code/GitHub Copilot, and other MCP-compatible AI assistants
+- **Security**: Built-in path validation, query sanitization, and audit logging
+- **Performance**: Caching with TTL and automatic file change detection
 
+## Quick Start
+
+### Installation
+
+**Minimal (No Semantic Search):**
 ```bash
-# Install from PyPI
-pip install your-docs-mcp
-
-# Point to your docs folder
-export DOCS_ROOT=/path/to/your/docs
-
-# Start MCP server + web interface
-your-docs-server
-```
-
-**That's it!** Your docs are now:
-- ✅ Accessible to AI assistants via MCP
-- ✅ Browseable at http://localhost:8123
-- ✅ Searchable with full-text and metadata filters
-- ✅ Ready for PDF generation
-
-## 🎯 What Can You Do?
-
-### For AI Assistants
-Once connected, ask your AI:
-- *"Show me the getting started guide"*
-- *"List all API endpoints for user management"*
-- *"Search for authentication documentation"*
-- *"Generate a PDF of all documentation"*
-
-### For Humans
-- Browse documentation in your browser at `http://localhost:8123`
-- Search with semantic understanding (with `[vector]` extra)
-- Generate PDF releases with custom branding
-- Access documentation via REST API
-
-## 📦 Installation
-
-### From PyPI (Recommended)
-
-**Basic install** (keyword search only):
-```bash
+# Install base package - keyword search only, smallest footprint
 pip install your-docs-mcp
 ```
 
-**With semantic search** (CPU-optimized, recommended):
+**With Vector Search (CPU - Recommended):**
 ```bash
+# Install with semantic search using CPU-only PyTorch (~200MB vs ~1.5GB)
 pip install "your-docs-mcp[vector]" --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
-**With PDF generation**:
+**With Vector Search (GPU/CUDA):**
 ```bash
-pip install "your-docs-mcp[pdf]"
-
-# Requires system dependencies
-# Ubuntu/Debian: sudo apt install pandoc texlive-xetex texlive-latex-extra
-# macOS: brew install pandoc basictex
+# Install with semantic search using CUDA-enabled PyTorch
+# Only use if you have NVIDIA GPU and need faster embeddings
+pip install "your-docs-mcp[vector-gpu]"
 ```
 
-**All features**:
+**From Source:**
 ```bash
-pip install "your-docs-mcp[vector,pdf]" --extra-index-url https://download.pytorch.org/whl/cpu
+git clone https://github.com/esola-thomas/Markdown-MCP
+cd Markdown-MCP
+
+# CPU vector search (recommended)
+pip install -e ".[vector]" --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Or minimal (no vector search)
+pip install -e .
 ```
 
-### From Source
+> **Note:** The `[vector]` extra installs ChromaDB and Sentence Transformers for semantic search.
+> Without it, the server still works but uses keyword-based search only.
+
+### Basic Configuration
+
+1. Set your documentation root directory:
 
 ```bash
-git clone https://github.com/esola-thomas/your-docs-mcp
-cd your-docs-mcp
-pip install -e ".[vector,pdf]" --extra-index-url https://download.pytorch.org/whl/cpu
+export DOCS_ROOT=/path/to/your/docs
 ```
 
-## 🔧 Setup for AI Assistants
+2. Start the server:
+
+```bash
+# MCP + Web server (recommended for development)
+your-docs-server
+
+# MCP server only (for AI clients like Claude Desktop)
+your-docs-mcp
+
+# Web server only (REST API + browser UI)
+your-docs-web
+```
 
 **Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 ```json
@@ -282,27 +278,7 @@ sources:
 
 cache:
   ttl: 3600
-  max_memory_mb: 500
-
-security:
-  allow_hidden_files: false
-  audit_logging: true
-```
-
-### Running Modes
-
-```bash
-# 1. MCP Server + Web Interface (recommended)
-your-docs-server
-
-# 2. MCP Server only (for AI clients)
-your-docs-mcp
-
-# 3. Web Server only (no MCP)
-your-docs-web
-```
-
-## 🔒 Security Features
+  m🔒 Security Features
 
 - ✅ **Path Validation**: Prevents directory traversal attacks
 - ✅ **Hidden Files Exclusion**: `.` files excluded by default
@@ -345,73 +321,37 @@ docs_mcp/
 ├── security/        # Security validation and sanitization
 └── utils/           # Logging and utilities
 ```
+## Claude Code Plugin
 
-## 📚 Example: Try It Now
+This repo includes a Claude Code plugin with skills for managing documentation files.
 
-This repo includes sample docs in the `docs/` folder:
+### Install the Plugin
 
 ```bash
-# Clone and test
-git clone https://github.com/esola-thomas/your-docs-mcp
-cd your-docs-mcp
-export DOCS_ROOT=$(pwd)/docs
-your-docs-server
+claude --plugin-dir /path/to/your-docs-mcp/docs-plugin
 ```
 
-The sample docs demonstrate:
-- ✅ Hierarchical structure with nested categories
-- ✅ Markdown with YAML frontmatter
-- ✅ OpenAPI specification integration
-- ✅ Best practices for organization
+### Available Skills
 
-## 💡 Tips & Best Practices
+| Skill | Description |
+|-------|-------------|
+| `docs-plugin/skills/doc-create` | Create new docs with proper frontmatter |
+| `docs-plugin/skills/doc-validate` | Validate docs against standards |
+| `docs-plugin/skills/doc-template` | Generate doc templates |
+| `docs-plugin/skills/doc-search` | Search documentation content |
 
-**Document Organization**:
-```
-docs/
-├── README.md           # Overview (processed first)
-├── guides/
-│   ├── README.md       # Category overview
-│   ├── quickstart.md
-│   └── advanced.md
-└── api/
-    ├── README.md
-    └── reference.md
-```
+See [`docs-plugin/README.md`](docs-plugin/README.md) for full details.
 
-**Frontmatter**:
-```yaml
----
-title: Clear, Descriptive Title
-tags: [category, topic, level]
-category: guides  # Maps to directory structure
-order: 1          # Controls display order
----
-```
+## Contributing
 
-**For Best Results**:
-- Use descriptive titles in frontmatter
-- Tag documents consistently
-- Organize by topic in subdirectories
-- Include README.md in each category
-- Keep documents focused and modular
+Contributions are welcome! Please see the contribution guidelines for more information.
 
-## 🤝 Contributing
+## License
 
-Contributions welcome! See [Contributing Guide](docs/development/contributing.md) for details.
+MIT License - see LICENSE file for details
 
-## 📄 License
+## Links
 
-MIT License - see [LICENSE](LICENSE) for details.
-
-## 🔗 Links
-
-- **Homepage**: https://github.com/esola-thomas/your-docs-mcp
-- **Documentation**: [docs/](docs/)
-- **Issues**: https://github.com/esola-thomas/your-docs-mcp/issues
-- **MCP Spec**: https://modelcontextprotocol.io
-- **PyPI**: https://pypi.org/project/your-docs-mcp/
-
----
-
-**Questions?** Open an [issue](https://github.com/esola-thomas/your-docs-mcp/issues) or check the [documentation](docs/).
+- [Documentation](https://github.com/esola-thomas/Markdown-MCP/tree/main/docs)
+- [Issue Tracker](https://github.com/esola-thomas/Markdown-MCP/issues)
+- [MCP Documentation](https://modelcontextprotocol.io)

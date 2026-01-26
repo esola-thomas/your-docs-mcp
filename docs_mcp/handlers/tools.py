@@ -1,6 +1,7 @@
 """MCP tool handlers for documentation queries."""
 
 import asyncio
+import os
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -276,16 +277,20 @@ async def handle_generate_pdf_release(
     Generates a PDF documentation release using the generate-docs-pdf.sh script.
 
     Args:
-        arguments: Tool arguments containing optional 'version' and 'confidential' flag
+        arguments: Tool arguments containing optional metadata and confidential flag
         docs_root: Root directory of the documentation
 
     Returns:
         Dictionary with 'success' status, 'output_file', and 'manifest_file' paths
     """
+    title = arguments.get("title")
+    subtitle = arguments.get("subtitle")
+    author = arguments.get("author")
     version = arguments.get("version")
     confidential = arguments.get("confidential", False)
+    owner = arguments.get("owner")
 
-    logger.info(f"Generate PDF release: version={version}, confidential={confidential}")
+    logger.info(f"Generate PDF release: version={version}, confidential={confidential}, title={title}")
 
     try:
         # Find the generate-docs-pdf.sh script
@@ -313,13 +318,25 @@ async def handle_generate_pdf_release(
             cmd.append(version)
         if confidential:
             cmd.append("--confidential")
+        if title:
+            cmd.extend(["--title", title])
+        if subtitle:
+            cmd.extend(["--subtitle", subtitle])
+        if author:
+            cmd.extend(["--author", author])
+        if owner:
+            cmd.extend(["--owner", owner])
 
-        # Run the script asynchronously
+        # Run the script asynchronously with DOCS_ROOT set
+        env = os.environ.copy()
+        env["DOCS_ROOT"] = str(docs_root)
+
         process = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=str(docs_root.parent) if docs_root.parent.exists() else str(Path.cwd()),
+            env=env,
         )
 
         stdout, stderr = await process.communicate()

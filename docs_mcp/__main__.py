@@ -94,17 +94,16 @@ def main() -> None:
     try:
         config = _validate_config_and_setup()
 
-        logger.info("Starting Markdown MCP Server")
-        if config.enable_web_server:
-            logger.info(
-                f"Web interface will be available at http://{config.web_host}:{config.web_port}"
-            )
+        # Always enable web server for your-docs-server command
+        config.enable_web_server = True
 
-        # Run MCP server (with web server if enabled)
-        if config.enable_web_server:
-            asyncio.run(serve_both(config))
-        else:
-            asyncio.run(serve(config))
+        logger.info("Starting Markdown MCP Server")
+        logger.info(
+            f"Web interface will be available at http://{config.web_host}:{config.web_port}"
+        )
+
+        # Run MCP server (with web server enabled)
+        asyncio.run(serve_both(config))
 
     except KeyboardInterrupt:
         print("\nServer stopped by user", file=sys.stderr)
