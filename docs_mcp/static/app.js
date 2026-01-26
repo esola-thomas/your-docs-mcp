@@ -175,7 +175,7 @@ function showHomeView() {
     contentArea.innerHTML = `
         <div class="card">
             <div class="card-header">
-                <h1 class="card-title">Hello World Welcome to Markdown MCP Documentation</h1>
+                <h1 class="card-title">Welcome to Markdown MCP Documentation</h1>
                 <p class="card-subtitle">Browse and search documentation with the same powerful tools available to LLMs</p>
             </div>
 
