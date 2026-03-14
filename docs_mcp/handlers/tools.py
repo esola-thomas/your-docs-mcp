@@ -1,9 +1,12 @@
 """MCP tool handlers for documentation queries."""
 
 import asyncio
+import json
 import os
 from pathlib import Path
 from typing import Any
+
+from mcp.types import Tool
 
 from docs_mcp.models.document import Document
 from docs_mcp.models.navigation import Category
@@ -13,6 +16,238 @@ from docs_mcp.services.hierarchy import (
 )
 from docs_mcp.services.search import search_by_metadata, search_content
 from docs_mcp.utils.logger import logger
+
+
+def get_tool_definitions() -> list[Tool]:
+    """Return the canonical list of MCP tool definitions.
+
+    This is the single source of truth for tool schemas.  Both the stdio
+    MCP server and the web/SSE server import this function so that tool
+    names, descriptions, and input schemas are never duplicated.
+
+    Returns:
+        List of Tool objects describing every available tool.
+    """
+    return [
+        Tool(
+            name="search_documentation",
+            description=(
+                "Search documentation with full-text search. "
+                "Returns results with hierarchical context (breadcrumbs)."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query string",
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Optional category to filter results",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (default: 10)",
+                        "default": 10,
+                    },
+                },
+                "required": ["query"],
+            },
+        ),
+        Tool(
+            name="navigate_to",
+            description=(
+                "Navigate to a specific URI in the documentation hierarchy. "
+                "Returns navigation context with parent, children, and breadcrumbs."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "uri": {
+                        "type": "string",
+                        "description": "URI to navigate to (e.g., 'docs://guides/security')",
+                    },
+                },
+                "required": ["uri"],
+            },
+        ),
+        Tool(
+            name="get_table_of_contents",
+            description=(
+                "Get the complete documentation hierarchy as a table of contents tree."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "max_depth": {
+                        "type": "integer",
+                        "description": "Maximum depth to include (optional)",
+                    },
+                },
+            },
+        ),
+        Tool(
+            name="search_by_tags",
+            description="Search documentation by metadata tags and category.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "tags": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Tags to search for (OR logic)",
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Category to filter by",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum results",
+                        "default": 10,
+                    },
+                },
+                "required": ["tags"],
+            },
+        ),
+        Tool(
+            name="get_document",
+            description="Get full content and metadata for a specific document by URI.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "uri": {
+                        "type": "string",
+                        "description": "Document URI (e.g., 'docs://guides/getting-started')",
+                    },
+                },
+                "required": ["uri"],
+            },
+        ),
+        Tool(
+            name="get_all_tags",
+            description=(
+                "Get a list of all unique tags defined across the documentation. "
+                "Optionally filter by category and include document counts per tag."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "description": "Optional category to filter tags from",
+                    },
+                    "include_counts": {
+                        "type": "boolean",
+                        "description": "Include document count for each tag (default: false)",
+                        "default": False,
+                    },
+                },
+            },
+        ),
+        Tool(
+            name="generate_pdf_release",
+            description=(
+                "Generate a PDF documentation release. Creates a formatted PDF "
+                "with all documentation, table of contents, and optional "
+                "confidentiality markings (watermark, headers, footers)."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Document title. Defaults to project name.",
+                    },
+                    "subtitle": {
+                        "type": "string",
+                        "description": "Document subtitle (optional).",
+                    },
+                    "author": {
+                        "type": "string",
+                        "description": "Document author. Defaults to 'Documentation Team'.",
+                    },
+                    "version": {
+                        "type": "string",
+                        "description": "Version string for the release (e.g., '2.0.0'). Defaults to current date.",
+                    },
+                    "confidential": {
+                        "type": "boolean",
+                        "description": "Add confidentiality markings (watermark, headers, footers). Default: false",
+                        "default": False,
+                    },
+                    "owner": {
+                        "type": "string",
+                        "description": "Copyright owner (shown when confidential=true). Defaults to project name.",
+                    },
+                },
+            },
+        ),
+    ]
+
+
+async def dispatch_tool_call(
+    name: str,
+    arguments: dict[str, Any],
+    documents: list[Document],
+    categories: dict[str, Category],
+    search_limit: int,
+    docs_root: Path,
+) -> list[Any]:
+    """Dispatch a tool call by name and return the MCP response payload.
+
+    This is the single source of truth for tool call routing.  Both the
+    stdio MCP server and the web/SSE server delegate to this function so
+    that handler dispatch is never duplicated.
+
+    Args:
+        name: Tool name as received from the MCP client.
+        arguments: Tool arguments dict from the MCP client.
+        documents: All loaded documents.
+        categories: Category tree built from the documents.
+        search_limit: Default maximum number of search results.
+        docs_root: Root directory of the documentation (used by PDF tool).
+
+    Returns:
+        A list of content items (``{"type": "text", "text": ...}`` dicts)
+        ready to be returned directly by an MCP ``call_tool`` handler.
+
+    Raises:
+        ValueError: When *name* does not match any known tool.
+    """
+    if name == "search_documentation":
+        results = await handle_search_documentation(
+            arguments, documents, categories, search_limit
+        )
+        return [{"type": "text", "text": json.dumps(results, indent=2)}]
+
+    elif name == "navigate_to":
+        result = await handle_navigate_to(arguments, documents, categories)
+        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+    elif name == "get_table_of_contents":
+        result = await handle_get_table_of_contents(arguments, documents, categories)
+        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+    elif name == "search_by_tags":
+        results = await handle_search_by_tags(arguments, documents, search_limit)
+        return [{"type": "text", "text": json.dumps(results, indent=2)}]
+
+    elif name == "get_document":
+        result = await handle_get_document(arguments, documents)
+        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+    elif name == "get_all_tags":
+        result = await handle_get_all_tags(arguments, documents)
+        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+    elif name == "generate_pdf_release":
+        result = await handle_generate_pdf_release(arguments, docs_root)
+        return [{"type": "text", "text": json.dumps(result, indent=2)}]
+
+    else:
+        raise ValueError(f"Unknown tool: {name}")
 
 
 async def handle_search_documentation(

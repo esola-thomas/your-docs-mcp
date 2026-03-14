@@ -1,6 +1,5 @@
 """Web server for documentation browsing with MCP SSE transport support."""
 
-import json
 from pathlib import Path
 from typing import Any
 
@@ -140,207 +139,20 @@ class DocumentationWebServer:
         @self.mcp_server.list_tools()
         async def list_tools() -> list[Tool]:
             """List available tools."""
-            return [
-                Tool(
-                    name="search_documentation",
-                    description=(
-                        "Search documentation with full-text search. "
-                        "Returns results with hierarchical context (breadcrumbs)."
-                    ),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "Search query string",
-                            },
-                            "category": {
-                                "type": "string",
-                                "description": "Optional category to filter results",
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "description": "Maximum number of results (default: 10)",
-                                "default": 10,
-                            },
-                        },
-                        "required": ["query"],
-                    },
-                ),
-                Tool(
-                    name="navigate_to",
-                    description=(
-                        "Navigate to a specific URI in the documentation hierarchy. "
-                        "Returns navigation context with parent, children, and breadcrumbs."
-                    ),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "uri": {
-                                "type": "string",
-                                "description": "URI to navigate to (e.g., 'docs://guides/security')",
-                            },
-                        },
-                        "required": ["uri"],
-                    },
-                ),
-                Tool(
-                    name="get_table_of_contents",
-                    description=(
-                        "Get the complete documentation hierarchy as a table of contents tree."
-                    ),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "max_depth": {
-                                "type": "integer",
-                                "description": "Maximum depth to include (optional)",
-                            },
-                        },
-                    },
-                ),
-                Tool(
-                    name="search_by_tags",
-                    description="Search documentation by metadata tags and category.",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "tags": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                                "description": "Tags to search for (OR logic)",
-                            },
-                            "category": {
-                                "type": "string",
-                                "description": "Category to filter by",
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "description": "Maximum results",
-                                "default": 10,
-                            },
-                        },
-                        "required": ["tags"],
-                    },
-                ),
-                Tool(
-                    name="get_document",
-                    description="Get full content and metadata for a specific document by URI.",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "uri": {
-                                "type": "string",
-                                "description": "Document URI (e.g., 'docs://guides/getting-started')",
-                            },
-                        },
-                        "required": ["uri"],
-                    },
-                ),
-                Tool(
-                    name="get_all_tags",
-                    description=(
-                        "Get a list of all unique tags defined across the documentation. "
-                        "Optionally filter by category and include document counts per tag."
-                    ),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "category": {
-                                "type": "string",
-                                "description": "Optional category to filter tags from",
-                            },
-                            "include_counts": {
-                                "type": "boolean",
-                                "description": "Include document count for each tag (default: false)",
-                                "default": False,
-                            },
-                        },
-                    },
-                ),
-                Tool(
-                    name="generate_pdf_release",
-                    description=(
-                        "Generate a PDF documentation release. Creates a formatted PDF "
-                        "with all documentation, table of contents, and optional "
-                        "confidentiality markings (watermark, headers, footers)."
-                    ),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "title": {
-                                "type": "string",
-                                "description": "Document title. Defaults to project name.",
-                            },
-                            "subtitle": {
-                                "type": "string",
-                                "description": "Document subtitle (optional).",
-                            },
-                            "author": {
-                                "type": "string",
-                                "description": "Document author. Defaults to 'Documentation Team'.",
-                            },
-                            "version": {
-                                "type": "string",
-                                "description": "Version string for the release (e.g., '2.0.0'). Defaults to current date.",
-                            },
-                            "confidential": {
-                                "type": "boolean",
-                                "description": "Add confidentiality markings (watermark, headers, footers). Default: false",
-                                "default": False,
-                            },
-                            "owner": {
-                                "type": "string",
-                                "description": "Copyright owner (shown when confidential=true). Defaults to project name.",
-                            },
-                        },
-                    },
-                ),
-            ]
+            return tools.get_tool_definitions()
 
         @self.mcp_server.call_tool()
         async def call_tool(name: str, arguments: Any) -> list[Any]:
             """Handle tool calls."""
             logger.info(f"MCP SSE Tool call: {name}")
-
-            if name == "search_documentation":
-                results = await tools.handle_search_documentation(
-                    arguments, self.documents, self.categories, self.config.search_limit
-                )
-                return [{"type": "text", "text": json.dumps(results, indent=2)}]
-
-            elif name == "navigate_to":
-                result = await tools.handle_navigate_to(arguments, self.documents, self.categories)
-                return [{"type": "text", "text": json.dumps(result, indent=2)}]
-
-            elif name == "get_table_of_contents":
-                result = await tools.handle_get_table_of_contents(
-                    arguments, self.documents, self.categories
-                )
-                return [{"type": "text", "text": json.dumps(result, indent=2)}]
-
-            elif name == "search_by_tags":
-                results = await tools.handle_search_by_tags(
-                    arguments, self.documents, self.config.search_limit
-                )
-                return [{"type": "text", "text": json.dumps(results, indent=2)}]
-
-            elif name == "get_document":
-                result = await tools.handle_get_document(arguments, self.documents)
-                return [{"type": "text", "text": json.dumps(result, indent=2)}]
-
-            elif name == "get_all_tags":
-                result = await tools.handle_get_all_tags(arguments, self.documents)
-                return [{"type": "text", "text": json.dumps(result, indent=2)}]
-
-            elif name == "generate_pdf_release":
-                result = await tools.handle_generate_pdf_release(
-                    arguments, Path(self.config.docs_root)
-                )
-                return [{"type": "text", "text": json.dumps(result, indent=2)}]
-
-            else:
-                raise ValueError(f"Unknown tool: {name}")
+            return await tools.dispatch_tool_call(
+                name=name,
+                arguments=arguments,
+                documents=self.documents,
+                categories=self.categories,
+                search_limit=self.config.search_limit,
+                docs_root=Path(self.config.docs_root),
+            )
 
         @self.mcp_server.list_resources()
         async def list_resources() -> list[Resource]:
