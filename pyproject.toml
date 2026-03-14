@@ -77,7 +77,11 @@ where = ["."]
 include = ["docs_mcp*"]
 
 [tool.setuptools.package-data]
-docs_mcp = ["py.typed", "static/*"]
+docs_mcp = [
+    "py.typed",
+    "static/*",
+    "static/vendor/**/*",
+]
 "*" = ["py.typed", "static/*"]
 
 [tool.ruff]
