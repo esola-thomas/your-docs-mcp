@@ -300,7 +300,11 @@ class DocumentationMCPServer:
 
             # Index documents for vector search
             try:
-                get_vector_store().add_documents(self.documents)
+                persist_dir = str(self.config.vector_persist_dir) if self.config.vector_persist_dir else None
+                get_vector_store(
+                    persist_directory=persist_dir,
+                    reindex=self.config.reindex,
+                ).add_documents(self.documents)
             except Exception as e:
                 logger.error(f"Failed to index documents: {e}")
 

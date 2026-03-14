@@ -72,6 +72,16 @@ class ServerConfig(BaseSettings):
     allow_hidden: bool = False
     audit_log: bool = True
 
+    # Vector store persistence
+    vector_persist_dir: Path | None = Field(
+        default=Path("~/.your-docs-mcp/vectordb"),
+        description="Directory for persistent vector index storage",
+    )
+    reindex: bool = Field(
+        default=False,
+        description="Force full vector index rebuild",
+    )
+
     # Web server configuration
     # Default to False for MCP safety - use your-docs-web or your-docs-server for web access
     enable_web_server: bool = False

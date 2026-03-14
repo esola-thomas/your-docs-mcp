@@ -24,6 +24,11 @@ def _validate_config_and_setup() -> ServerConfig:
     """
 
     config = load_config()
+
+    # Apply --reindex flag from CLI args
+    if "--reindex" in sys.argv:
+        config.reindex = True
+
     setup_logging(config.log_level)
 
     if not config.sources and not config.docs_root:
