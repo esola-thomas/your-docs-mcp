@@ -714,40 +714,10 @@ class DocumentationWebServer:
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.get("/api/generate-pdf")
-        async def generate_pdf_get(
-            title: str | None = Query(None, description="Document title"),
-            subtitle: str | None = Query(None, description="Document subtitle"),
-            author: str | None = Query(None, description="Document author"),
-            version: str | None = Query(None, description="Version string for the release"),
-            confidential: bool = Query(False, description="Add confidentiality markings"),
-            owner: str | None = Query(None, description="Owner name for confidentiality notices"),
-        ) -> JSONResponse:
-            """Generate PDF documentation release via GET request.
-
-            Args:
-                title: Optional document title
-                subtitle: Optional document subtitle
-                author: Optional document author
-                version: Optional version string
-                confidential: Whether to add confidentiality markings
-                owner: Optional owner name for confidentiality
-
-            Returns:
-                Generation result with file paths
-            """
-            try:
-                result = await tools.handle_generate_pdf_release(
-                    arguments={
-                        "title": title,
-                        "subtitle": subtitle,
-                        "author": author,
-                        "version": version,
-                        "confidential": confidential,
-                        "owner": owner,
-                    },
-                    docs_root=Path(self.config.docs_root),
-                )
-                return JSONResponse(content=result)
-            except Exception as e:
-                logger.error(f"PDF generation failed: {e}")
-                raise HTTPException(status_code=500, detail=str(e))
+        async def generate_pdf_get() -> JSONResponse:
+            """Reject GET requests to /api/generate-pdf with 405 Method Not Allowed."""
+            raise HTTPException(
+                status_code=405,
+                detail="Method Not Allowed. Use POST to generate a PDF.",
+                headers={"Allow": "POST"},
+            )
