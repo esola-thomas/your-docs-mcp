@@ -117,6 +117,39 @@ class TestServerConfig:
         assert config.max_depth == 10
         assert config.allow_hidden is False
         assert config.audit_log is True
+        assert config.cors_origins == ["*"]
+
+    def test_server_config_cors_origins_from_list(self):
+        """Test cors_origins accepts a list of strings."""
+        config = ServerConfig(cors_origins=["https://example.com", "https://app.example.com"])
+
+        assert config.cors_origins == ["https://example.com", "https://app.example.com"]
+
+    def test_server_config_cors_origins_from_comma_separated_string(self):
+        """Test cors_origins parsed from comma-separated string (env var format)."""
+        config = ServerConfig(cors_origins="https://docs.example.com,https://example.com")
+
+        assert config.cors_origins == ["https://docs.example.com", "https://example.com"]
+
+    def test_server_config_cors_origins_empty_string_defaults_to_wildcard(self):
+        """Test that empty string for cors_origins returns default wildcard."""
+        config = ServerConfig(cors_origins="")
+
+        assert config.cors_origins == ["*"]
+
+    def test_server_config_cors_origins_from_env_var(self, monkeypatch):
+        """Test cors_origins loaded from MCP_DOCS_CORS_ORIGINS env var."""
+        monkeypatch.setenv("MCP_DOCS_CORS_ORIGINS", "https://docs.huitzo.com,https://huitzo.com")
+
+        config = ServerConfig()
+
+        assert config.cors_origins == ["https://docs.huitzo.com", "https://huitzo.com"]
+
+    def test_server_config_cors_origins_single_origin(self):
+        """Test cors_origins with a single origin string."""
+        config = ServerConfig(cors_origins="https://example.com")
+
+        assert config.cors_origins == ["https://example.com"]
 
     def test_server_config_with_docs_root(self, tmp_path):
         """Test server config with docs_root set."""

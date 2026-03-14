@@ -1,10 +1,34 @@
 """Configuration management using pydantic-settings."""
 
+import json
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import AliasChoices, Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic.fields import FieldInfo
+from pydantic_settings import BaseSettings, EnvSettingsSource, PydanticBaseSettingsSource, SettingsConfigDict
+
+
+class _CommaListEnvSettingsSource(EnvSettingsSource):
+    """Env settings source that supports comma-separated values for list fields.
+
+    Extends the default source to allow fields declared in COMMA_FIELDS to be
+    supplied as plain comma-separated strings (e.g. ``a,b,c``) in addition to
+    the standard JSON-array format (``["a","b","c"]``).
+    """
+
+    COMMA_FIELDS: frozenset[str] = frozenset({"cors_origins"})
+
+    def decode_complex_value(self, field_name: str, field: FieldInfo, value: Any) -> Any:
+        if field_name in self.COMMA_FIELDS and isinstance(value, str):
+            # Try JSON first so ["a","b"] still works, then fall back to CSV.
+            try:
+                return json.loads(value)
+            except ValueError:
+                if not value:
+                    return ["*"]
+                return [stripped for origin in value.split(",") if (stripped := origin.strip())] or ["*"]
+        return super().decode_complex_value(field_name, field, value)
 
 
 class SourceConfig(BaseSettings):
@@ -77,6 +101,7 @@ class ServerConfig(BaseSettings):
     enable_web_server: bool = False
     web_host: str = "127.0.0.1"
     web_port: int = 8123
+    cors_origins: list[str] = Field(default_factory=lambda: ["*"], description="Allowed CORS origins")
 
     @field_validator("docs_root")
     @classmethod
@@ -90,6 +115,19 @@ class ServerConfig(BaseSettings):
         if not path.is_dir():
             raise ValueError(f"Documentation root is not a directory: {path}")
         return path
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: str | list[str]) -> list[str]:
+        """Parse comma-separated CORS origins (supports both CSV and JSON-array strings)."""
+        if isinstance(v, str):
+            if not v:
+                return ["*"]
+            try:
+                return json.loads(v)
+            except ValueError:
+                return [stripped for origin in v.split(",") if (stripped := origin.strip())] or ["*"]
+        return v
 
     @field_validator("openapi_specs", mode="before")
     @classmethod
@@ -134,6 +172,23 @@ class ServerConfig(BaseSettings):
                 )
             ]
         return []
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Use a custom env source that supports comma-separated list values."""
+        return (
+            init_settings,
+            _CommaListEnvSettingsSource(settings_cls),
+            dotenv_settings,
+            file_secret_settings,
+        )
 
 
 def load_config() -> ServerConfig:

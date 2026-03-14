@@ -259,6 +259,7 @@ MCP_DOCS_OPENAPI_SPECS=/path/to/spec.yaml # OpenAPI spec paths (comma-separated)
 MCP_DOCS_ENABLE_WEB_SERVER=true            # Enable web interface
 MCP_DOCS_WEB_HOST=127.0.0.1               # Web server host
 MCP_DOCS_WEB_PORT=8123                     # Web server port
+MCP_DOCS_CORS_ORIGINS=*                    # Allowed CORS origins (comma-separated, default: *)
 
 # Logging
 LOG_LEVEL=INFO                             # DEBUG, INFO, WARNING, ERROR
