@@ -13,6 +13,115 @@ const state = {
 };
 
 // ============================================================================
+// URL Routing (History API)
+// ============================================================================
+
+const SITE_TITLE = 'Markdown MCP Documentation';
+
+// Map view names to URL paths
+const VIEW_PATHS = {
+    'home':    '/',
+    'search':  '/search',
+    'toc':     '/toc',
+    'tags':    '/tags',
+    'release': '/release',
+};
+
+// Human-readable titles for each view
+const VIEW_TITLES = {
+    'home':    null,
+    'search':  'Search',
+    'toc':     'Browse',
+    'tags':    'Tags',
+    'release': 'Generate Release',
+};
+
+/**
+ * Convert a document URI (e.g. docs://guides/intro) to a browser URL path
+ * (e.g. /doc/guides/intro).
+ */
+function uriToUrlPath(uri) {
+    // Strip the scheme prefix (everything up to and including "://")
+    const path = uri.replace(/^[^:]+:\/\//, '');
+    return '/doc/' + path;
+}
+
+/**
+ * Convert a browser URL path (e.g. /doc/guides/intro) back to a document URI
+ * (e.g. docs://guides/intro).
+ */
+function urlPathToUri(urlPath) {
+    const docPath = urlPath.replace(/^\/doc\//, '');
+    return 'docs://' + docPath;
+}
+
+/**
+ * Push a new URL state and update the page title.
+ * @param {string} urlPath - The URL path to push (e.g. '/toc', '/doc/guides/intro').
+ * @param {string|null} titleSuffix - Appended to SITE_TITLE with " - " separator.
+ */
+function pushRouteState(urlPath, titleSuffix) {
+    const fullTitle = titleSuffix ? `${titleSuffix} - ${SITE_TITLE}` : SITE_TITLE;
+    document.title = fullTitle;
+    history.pushState({ urlPath }, fullTitle, urlPath);
+}
+
+/**
+ * Delay (ms) given to async view functions to finish rendering their DOM
+ * before a follow-up action (e.g. pre-populating a search input) runs.
+ * Using requestAnimationFrame is not sufficient here because the view
+ * rendering is synchronous innerHTML assignment; a minimal timeout ensures
+ * the browser has processed the new DOM before we try to query it.
+ */
+const DOM_READY_DELAY = 50;
+
+/**
+ * Render a view without pushing a history entry, then optionally pre-populate
+ * an input field and run a query action after the DOM has settled.
+ * @param {string} view - One of the keys in VIEW_PATHS.
+ * @param {string|null} inputId - ID of the input element to pre-populate.
+ * @param {string|null} query - Value to put in the input and pass to actionFn.
+ * @param {Function|null} actionFn - Called with query once the DOM is ready.
+ */
+function restoreView(view, inputId = null, query = null, actionFn = null) {
+    navigateToView(view, { pushState: false });
+    if (inputId && query && actionFn) {
+        setTimeout(() => {
+            const input = document.getElementById(inputId);
+            if (input) input.value = query;
+            actionFn(query);
+        }, DOM_READY_DELAY);
+    }
+}
+
+/**
+ * Read the current browser URL and render the appropriate view without
+ * pushing a new history entry.  Called on initial page load and on
+ * browser back/forward navigation (popstate).
+ */
+function routeFromUrl() {
+    const path = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+
+    if (path === '/' || path === '') {
+        restoreView('home');
+    } else if (path === '/search') {
+        restoreView('search', 'search-query-input', params.get('q'), performSearch);
+    } else if (path === '/toc') {
+        restoreView('toc');
+    } else if (path === '/tags') {
+        restoreView('tags', 'tags-input', params.get('q'), searchByTags);
+    } else if (path === '/release') {
+        restoreView('release');
+    } else if (path.startsWith('/doc/')) {
+        navigateToDocument(urlPathToUri(path), { pushState: false });
+    } else {
+        // Unknown path — fall back to home
+        restoreView('home');
+    }
+}
+
+// ============================================================================
 // Initialization
 // ============================================================================
 
@@ -20,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeTheme();
     initializeEventListeners();
     loadHealthStats();
-    showHomeView();
+    routeFromUrl();
 });
 
 // ============================================================================
@@ -101,6 +210,11 @@ function initializeEventListeners() {
             document.getElementById('header-search').blur();
         }
     });
+
+    // Browser back/forward navigation
+    window.addEventListener('popstate', () => {
+        routeFromUrl();
+    });
 }
 
 function isInputFocused() {
@@ -117,7 +231,7 @@ function toggleMobileMenu() {
 // Navigation
 // ============================================================================
 
-function navigateToView(view) {
+function navigateToView(view, { pushState = true } = {}) {
     state.currentView = view;
 
     // Update navigation active state
@@ -128,6 +242,16 @@ function navigateToView(view) {
 
     // Close mobile menu
     document.getElementById('sidebar').classList.remove('open');
+
+    // Update browser URL and page title
+    if (pushState) {
+        const urlPath = VIEW_PATHS[view] || '/';
+        pushRouteState(urlPath, VIEW_TITLES[view] || null);
+    } else {
+        // Still update the title without touching history
+        const titleSuffix = VIEW_TITLES[view] || null;
+        document.title = titleSuffix ? `${titleSuffix} - ${SITE_TITLE}` : SITE_TITLE;
+    }
 
     // Load view
     switch(view) {
@@ -419,6 +543,13 @@ async function performSearch(query) {
         return;
     }
 
+    // Update URL to reflect the active search query (replaceState so it doesn't
+    // create a separate history entry on top of the /search entry)
+    const searchPath = `/search?q=${encodeURIComponent(query.trim())}`;
+    const searchTitle = `Search: ${query.trim()} - ${SITE_TITLE}`;
+    document.title = searchTitle;
+    history.replaceState({ urlPath: searchPath }, searchTitle, searchPath);
+
     const container = document.getElementById('search-results-container');
     if (!container) return;
 
@@ -614,6 +745,13 @@ async function searchByTags(tagsInput) {
         showEmptyState('tags-results-container', 'Please enter at least one tag', 'fas fa-tags');
         return;
     }
+
+    // Update URL to reflect the active tag filter (replaceState so it doesn't
+    // create a separate history entry on top of the /tags entry)
+    const tagsPath = `/tags?q=${encodeURIComponent(tagsInput.trim())}`;
+    const tagsTitle = `Tags: ${tagsInput.trim()} - ${SITE_TITLE}`;
+    document.title = tagsTitle;
+    history.replaceState({ urlPath: tagsPath }, tagsTitle, tagsPath);
 
     const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
     const container = document.getElementById('tags-results-container');
@@ -884,8 +1022,18 @@ async function generatePDFRelease() {
 // Document Display
 // ============================================================================
 
-async function navigateToDocument(uri) {
+async function navigateToDocument(uri, { pushState = true } = {}) {
     const contentArea = document.getElementById('content-area');
+
+    // Remove active state from sidebar nav links – documents don't map to a nav entry
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+
+    // Update browser URL immediately so the address bar reflects the target document
+    if (pushState) {
+        const urlPath = uriToUrlPath(uri);
+        document.title = SITE_TITLE;
+        history.pushState({ urlPath }, SITE_TITLE, urlPath);
+    }
 
     // Show loading
     contentArea.innerHTML = `
@@ -915,6 +1063,14 @@ async function navigateToDocument(uri) {
         }
 
         state.currentDocument = data;
+
+        // Now that we know the document title, update the page title (and
+        // replace the history entry title without pushing a new one)
+        const docTitle = data.title || 'Document';
+        const fullTitle = `${docTitle} - ${SITE_TITLE}`;
+        document.title = fullTitle;
+        history.replaceState(history.state, fullTitle, window.location.href);
+
         displayDocument(data, contentArea);
     } catch (err) {
         contentArea.innerHTML = `

@@ -721,3 +721,14 @@ class DocumentationWebServer:
                 detail="Method Not Allowed. Use POST to generate a PDF.",
                 headers={"Allow": "POST"},
             )
+
+        @self.app.get("/{full_path:path}")
+        async def serve_spa(full_path: str) -> FileResponse:
+            """Serve the SPA index page for all non-API, non-static paths.
+
+            This catch-all enables client-side URL routing and deep linking.
+            Any path not matched by a specific API route (e.g. /toc, /doc/guides/intro)
+            returns index.html so the JavaScript router can handle navigation.
+            """
+            static_dir = Path(__file__).parent / "static"
+            return FileResponse(str(static_dir / "index.html"))
