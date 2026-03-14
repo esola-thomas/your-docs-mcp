@@ -112,3 +112,10 @@ class TestAuthConfigIntegration:
         config = ServerConfig()
         assert config.auth_enabled is True
         assert config.auth_token_list == ["env-token-1", "env-token-2"]
+
+    def test_auth_enabled_without_tokens_raises(self, tmp_path):
+        docs_root = tmp_path / "docs"
+        docs_root.mkdir()
+        config = ServerConfig(docs_root=str(docs_root), auth_enabled=True, auth_tokens="")
+        with pytest.raises(ValueError, match="no tokens are configured"):
+            DocumentationWebServer(config=config, documents=[], categories={})

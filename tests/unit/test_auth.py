@@ -135,7 +135,7 @@ class TestResponseBody:
         response = auth_client.get("/api/toc")
         body = response.json()
         assert "detail" in body
-        assert "Authorization" in body["detail"] or "authorization" in body["detail"].lower()
+        assert "authorization" in body["detail"].lower()
 
     def test_invalid_token_message(self, auth_client: TestClient):
         response = auth_client.get(

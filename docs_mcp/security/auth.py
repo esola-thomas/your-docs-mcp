@@ -49,9 +49,9 @@ class BearerAuthMiddleware(BaseHTTPMiddleware):
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        token = auth_header[len("Bearer ") :]
+        token = auth_header[len("Bearer "):]
 
-        if not self._is_valid_token(token):
+        if not token or not self._is_valid_token(token):
             logger.warning("Auth: invalid bearer token")
             return JSONResponse(
                 status_code=401,

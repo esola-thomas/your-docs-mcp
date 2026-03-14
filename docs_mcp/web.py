@@ -121,10 +121,10 @@ class DocumentationWebServer:
         # Add authentication middleware (if enabled)
         if config.auth_enabled:
             if not config.auth_token_list:
-                logger.warning(
-                    "Auth enabled but no tokens configured – "
-                    "all requests will be rejected. "
-                    "Set MCP_DOCS_AUTH_TOKENS to provide valid tokens."
+                raise ValueError(
+                    "Authentication is enabled (MCP_DOCS_AUTH_ENABLED=true) "
+                    "but no tokens are configured. "
+                    "Set MCP_DOCS_AUTH_TOKENS to provide valid bearer tokens."
                 )
             self.app.add_middleware(
                 BearerAuthMiddleware,
