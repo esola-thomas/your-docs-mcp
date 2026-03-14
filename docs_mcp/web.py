@@ -20,6 +20,7 @@ from docs_mcp.config import ServerConfig
 from docs_mcp.handlers import resources, tools
 from docs_mcp.models.document import Document
 from docs_mcp.models.navigation import Category
+from docs_mcp.security.auth import BearerAuthMiddleware
 from docs_mcp.utils.logger import logger
 
 
@@ -116,6 +117,19 @@ class DocumentationWebServer:
             description="Web interface for browsing documentation with MCP SSE support",
             version="0.1.0",
         )
+
+        # Add authentication middleware (if enabled)
+        if config.auth_enabled:
+            if not config.auth_token_list:
+                logger.warning(
+                    "Auth enabled but no tokens configured – "
+                    "all requests will be rejected. "
+                    "Set MCP_DOCS_AUTH_TOKENS to provide valid tokens."
+                )
+            self.app.add_middleware(
+                BearerAuthMiddleware,
+                auth_tokens=config.auth_token_list,
+            )
 
         # Add CORS middleware - important for MCP clients
         self.app.add_middleware(
