@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "your-docs": {
+      "command": "your-docs-mcp",
+      "env": {
+        "DOCS_ROOT": "./docs"
+      }
+    }
+  }
+}

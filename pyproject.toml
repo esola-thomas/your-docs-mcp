@@ -69,15 +69,19 @@ your-docs-web = "docs_mcp.__main__:web_main"
 your-docs-server = "docs_mcp.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/esola-thomas/Markdown-MCP"
-Repository = "https://github.com/esola-thomas/Markdown-MCP"
+Homepage = "https://github.com/esola-thomas/your-docs-mcp"
+Repository = "https://github.com/esola-thomas/your-docs-mcp"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["docs_mcp*"]
 
 [tool.setuptools.package-data]
-docs_mcp = ["py.typed", "static/*"]
+docs_mcp = [
+    "py.typed",
+    "static/*",
+    "static/vendor/**/*",
+]
 "*" = ["py.typed", "static/*"]
 
 [tool.ruff]
