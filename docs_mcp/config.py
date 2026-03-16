@@ -72,11 +72,22 @@ class ServerConfig(BaseSettings):
     allow_hidden: bool = False
     audit_log: bool = True
 
+    # Authentication settings
+    auth_enabled: bool = False
+    auth_tokens: str = ""
+
     # Web server configuration
     # Default to False for MCP safety - use your-docs-web or your-docs-server for web access
     enable_web_server: bool = False
     web_host: str = "127.0.0.1"
     web_port: int = 8123
+
+    @property
+    def auth_token_list(self) -> list[str]:
+        """Parse comma-separated auth tokens into a list."""
+        if not self.auth_tokens:
+            return []
+        return [t.strip() for t in self.auth_tokens.split(",") if t.strip()]
 
     @field_validator("docs_root")
     @classmethod
