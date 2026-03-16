@@ -1,5 +1,7 @@
 """Vector search service using ChromaDB and Sentence Transformers."""
 
+import hashlib
+from pathlib import Path
 from typing import Any
 
 try:
@@ -13,34 +15,66 @@ from docs_mcp.models.document import Document
 from docs_mcp.utils.logger import logger
 
 
+def _content_hash(title: str, content: str) -> str:
+    """Compute SHA-256 hash of embedding text for change detection."""
+    text = f"{title}\n\n{content[:2000]}"
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 class VectorStore:
     """Vector database for semantic search."""
 
-    def __init__(self) -> None:
-        """Initialize ephemeral vector store."""
+    def __init__(
+        self,
+        persist_directory: str | None = None,
+        reindex: bool = False,
+    ) -> None:
+        """Initialize vector store with optional persistence.
+
+        Args:
+            persist_directory: Path for persistent storage. If None, uses ephemeral (in-memory) store.
+            reindex: If True, force full rebuild of the vector index.
+        """
         if chromadb is None:
             logger.warning("ChromaDB not installed. Semantic search disabled.")
             self.collection = None
             return
 
         try:
-            self.client = chromadb.Client()
+            if persist_directory:
+                persist_path = Path(persist_directory).expanduser().resolve()
+                persist_path.mkdir(parents=True, exist_ok=True)
+                self.client = chromadb.PersistentClient(path=str(persist_path))
+                storage_mode = f"persistent ({persist_path})"
+            else:
+                self.client = chromadb.Client()
+                storage_mode = "ephemeral"
+
             # Use small, fast model
             self.embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
                 model_name="all-MiniLM-L6-v2"
             )
-            self.collection = self.client.create_collection(
+
+            if reindex:
+                # Delete existing collection to force full rebuild
+                try:
+                    self.client.delete_collection(name="documents")
+                    logger.info("Deleted existing vector collection for reindex")
+                except Exception:
+                    pass  # Collection may not exist yet
+
+            self.collection = self.client.get_or_create_collection(
                 name="documents",
                 embedding_function=self.embedding_fn,
                 metadata={"hnsw:space": "cosine"},  # Use cosine similarity
             )
-            logger.info("Vector store initialized (ephemeral)")
+            logger.info(f"Vector store initialized ({storage_mode})")
         except Exception as e:
             logger.error(f"Failed to initialize vector store: {e}")
             self.collection = None
 
     def add_documents(self, documents: list[Document]) -> None:
-        """Index documents in vector store.
+        """Index documents in vector store, skipping unchanged documents.
 
         Args:
             documents: List of documents to index
@@ -49,34 +83,69 @@ class VectorStore:
             return
 
         try:
-            # Prepare data
-            ids = [doc.uri for doc in documents]
-            documents_text = []
-            metadatas = []
-
+            # Build lookup of new documents by id
+            new_docs: dict[str, tuple[Document, str, str]] = {}
             for doc in documents:
-                # Combine title and content for embedding
-                # We prioritize the first 2000 chars which usually contain the intro/summary
                 text = f"{doc.title}\n\n{doc.content[:2000]}"
-                documents_text.append(text)
+                doc_hash = _content_hash(doc.title, doc.content)
+                new_docs[doc.uri] = (doc, text, doc_hash)
 
-                metadatas.append(
+            new_ids = list(new_docs.keys())
+
+            # Fetch existing hashes from the collection to detect changes
+            existing_hashes: dict[str, str] = {}
+            try:
+                existing = self.collection.get(ids=new_ids, include=["metadatas"])
+                if existing and existing["ids"]:
+                    for eid, emeta in zip(existing["ids"], existing["metadatas"] or []):
+                        if emeta and "content_hash" in emeta:
+                            existing_hashes[eid] = emeta["content_hash"]
+            except Exception:
+                # If get fails (e.g., ids not found), treat all as new
+                pass
+
+            # Determine which documents need (re-)embedding
+            to_add_ids: list[str] = []
+            to_add_texts: list[str] = []
+            to_add_metas: list[dict[str, str]] = []
+            skipped = 0
+
+            for doc_id, (doc, text, doc_hash) in new_docs.items():
+                if doc_id in existing_hashes and existing_hashes[doc_id] == doc_hash:
+                    skipped += 1
+                    continue
+
+                to_add_ids.append(doc_id)
+                to_add_texts.append(text)
+                to_add_metas.append(
                     {
                         "title": doc.title,
                         "category": doc.category or "uncategorized",
                         "uri": doc.uri,
+                        "content_hash": doc_hash,
                     }
                 )
 
-            # Add in batches to prevent payload issues
+            if not to_add_ids:
+                logger.info(
+                    f"Vector index up-to-date: all {skipped} documents unchanged"
+                )
+                return
+
+            # Upsert in batches to handle both new and changed documents
             batch_size = 100
-            for i in range(0, len(documents), batch_size):
-                end = min(i + batch_size, len(documents))
-                self.collection.add(
-                    ids=ids[i:end], documents=documents_text[i:end], metadatas=metadatas[i:end]
+            for i in range(0, len(to_add_ids), batch_size):
+                end = min(i + batch_size, len(to_add_ids))
+                self.collection.upsert(
+                    ids=to_add_ids[i:end],
+                    documents=to_add_texts[i:end],
+                    metadatas=to_add_metas[i:end],
                 )
 
-            logger.info(f"Indexed {len(documents)} documents in vector store")
+            logger.info(
+                f"Indexed {len(to_add_ids)} documents in vector store "
+                f"({skipped} unchanged, skipped)"
+            )
 
         except Exception as e:
             logger.error(f"Failed to index documents: {e}")
@@ -132,9 +201,23 @@ class VectorStore:
 _vector_store: VectorStore | None = None
 
 
-def get_vector_store() -> VectorStore:
-    """Get global vector store instance."""
+def get_vector_store(
+    persist_directory: str | None = None,
+    reindex: bool = False,
+) -> VectorStore:
+    """Get or create the global vector store instance.
+
+    Args:
+        persist_directory: Path for persistent storage (used only on first call).
+        reindex: Force full rebuild of vector index (used only on first call).
+
+    Returns:
+        The global VectorStore instance.
+    """
     global _vector_store
     if _vector_store is None:
-        _vector_store = VectorStore()
+        _vector_store = VectorStore(
+            persist_directory=persist_directory,
+            reindex=reindex,
+        )
     return _vector_store
