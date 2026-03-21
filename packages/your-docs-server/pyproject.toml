@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "your-docs-server"
-version = "0.1.0"
+version = "1.0.0"
 description = "Full-featured documentation server with MCP, web UI, and REST API — convenience install for your-docs-mcp"
 readme = "README.md"
 license = {text = "MIT"}
