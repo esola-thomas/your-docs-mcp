@@ -40,7 +40,13 @@ web = [
     "pygments>=2.17",
 ]
 server = [
-    "your-docs-mcp[web]",
+    # web deps (flattened to avoid self-referential extras in editable installs)
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "jinja2>=3.1.0",
+    "markdown>=3.5",
+    "pygments>=2.17",
+    # server-specific deps
     "openapi-spec-validator>=0.7.0",
     "prance>=23.6.21.0",
     "watchdog>=3.0.0",
@@ -57,10 +63,35 @@ pdf = [
     "Pillow>=9.0.0",
 ]
 full = [
-    "your-docs-mcp[server,vector,pdf]",
+    # server deps (flattened)
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "jinja2>=3.1.0",
+    "markdown>=3.5",
+    "pygments>=2.17",
+    "openapi-spec-validator>=0.7.0",
+    "prance>=23.6.21.0",
+    "watchdog>=3.0.0",
+    # vector deps
+    "chromadb>=0.4.0",
+    "sentence-transformers>=2.2.2",
+    # pdf deps
+    "Pillow>=9.0.0",
 ]
 dev = [
-    "your-docs-mcp[full]",
+    # full deps (flattened)
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "jinja2>=3.1.0",
+    "markdown>=3.5",
+    "pygments>=2.17",
+    "openapi-spec-validator>=0.7.0",
+    "prance>=23.6.21.0",
+    "watchdog>=3.0.0",
+    "chromadb>=0.4.0",
+    "sentence-transformers>=2.2.2",
+    "Pillow>=9.0.0",
+    # dev tools
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
     "httpx>=0.25.0",

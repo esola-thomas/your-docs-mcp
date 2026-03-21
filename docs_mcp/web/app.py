@@ -591,4 +591,3 @@ class DocumentationWebServer:
             except Exception as e:
                 logger.error(f"PDF generation failed: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
-

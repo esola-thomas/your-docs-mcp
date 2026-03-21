@@ -1,6 +1,5 @@
 """Unit tests for server-side markdown rendering."""
 
-
 from docs_mcp.web.markdown_renderer import render_markdown
 
 

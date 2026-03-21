@@ -1,6 +1,5 @@
 """Integration tests for server-rendered documentation routes."""
 
-
 import pytest
 from fastapi.testclient import TestClient
 
