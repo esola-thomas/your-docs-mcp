@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Search: {{ query | e }}{% endblock %}
+{% block meta_description %}Search results for "{{ query | e }}" in documentation{% endblock %}
+
+{% block sidebar_content %}
+  <div class="sidebar-section">
+    <h3 class="sidebar-heading">Search</h3>
+    <ul class="sidebar-list">
+      <li><a href="/docs/" class="sidebar-link">Back to Home</a></li>
+      <li><a href="/docs/tags/" class="sidebar-link">Browse Tags</a></li>
+    </ul>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <section class="search-page">
+    <header class="search-header">
+      <h1 class="search-title">Search Documentation</h1>
+
+      <form class="search-form" action="/docs/search" method="GET" role="search">
+        <label for="search-page-input" class="visually-hidden">Search documentation</label>
+        <input
+          type="search"
+          id="search-page-input"
+          name="q"
+          value="{{ query | e }}"
+          placeholder="Search documentation..."
+          autocomplete="off"
+          class="search-input"
+          hx-get="/docs/_partials/search-results"
+          hx-trigger="keyup changed delay:300ms"
+          hx-target="#search-results"
+          hx-indicator="#search-spinner"
+        >
+        <button type="submit" class="search-btn">Search</button>
+      </form>
+    </header>
+
+    <div class="search-indicator" id="search-spinner">
+      <span class="spinner"></span> Searching...
+    </div>
+
+    <div id="search-results">
+      {% if query %}
+      <p class="search-results-count">
+        {{ results | length }} result{{ 's' if results | length != 1 else '' }} for '<strong>{{ query | e }}</strong>'
+      </p>
+      {% endif %}
+
+      {% if results %}
+      <div class="search-results-list">
+        {% for result in results %}
+        <article class="search-result-card">
+          <h2 class="search-result-title">
+            <a href="{{ result.url }}">{{ result.title | e }}</a>
+          </h2>
+
+          {% if result.breadcrumbs %}
+          <nav class="search-result-breadcrumbs" aria-label="Result path">
+            <ol class="breadcrumb-list breadcrumb-list--compact">
+              {% for crumb in result.breadcrumbs %}
+              <li class="breadcrumb-item">
+                {{ crumb.label | e }}
+              </li>
+              {% endfor %}
+            </ol>
+          </nav>
+          {% endif %}
+
+          {% if result.excerpt %}
+          <p class="search-result-excerpt">{{ result.excerpt | safe }}</p>
+          {% endif %}
+
+          <div class="search-result-meta">
+            {% if result.match_type %}
+            <span class="match-badge match-badge--{{ result.match_type | e }}">
+              {{ result.match_type | e }}
+            </span>
+            {% endif %}
+
+            {% if result.score is defined %}
+            <span class="relevance-indicator" title="Relevance: {{ result.score }}">
+              <span class="relevance-bar">
+                <span class="relevance-fill" style="width: {{ [result.score * 100, 100] | min }}%"></span>
+              </span>
+            </span>
+            {% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+
+      {% elif query %}
+      <div class="search-empty">
+        <p class="search-empty-icon">&#128270;</p>
+        <h2 class="search-empty-title">No results found</h2>
+        <p class="search-empty-message">No results found for '<strong>{{ query | e }}</strong>'</p>
+        <p class="search-empty-hint">Try different keywords or check your spelling.</p>
+        <a href="/docs/" class="btn btn--primary">Browse all documentation</a>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

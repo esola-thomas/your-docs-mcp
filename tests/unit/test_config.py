@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from docs_mcp.config import ServerConfig, SourceConfig, load_config
+from docs_mcp.core.config import ServerConfig, SourceConfig, load_config
 
 
 class TestSourceConfig:

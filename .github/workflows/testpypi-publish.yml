@@ -1,0 +1,204 @@
+name: Publish to TestPyPI (PR Preview)
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+jobs:
+  build-dev:
+    name: Build dev packages
+    # Only run on same-repo PRs (forks don't have OIDC access)
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      dev_version: ${{ steps.devver.outputs.dev_version }}
+      server_dev_version: ${{ steps.devver.outputs.server_dev_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Compute dev versions
+        id: devver
+        run: |
+          # Read main package version
+          BASE_VERSION=$(python -c "
+          import re
+          in_proj = False
+          for line in open('pyproject.toml'):
+              s = line.strip()
+              if s.startswith('['):
+                  in_proj = (s == '[project]')
+              if in_proj:
+                  m = re.match(r'version\s*=\s*\"([^\"]+)\"', s)
+                  if m:
+                      print(m.group(1))
+                      break
+          ")
+          # Read server package version
+          SERVER_VERSION=$(python -c "
+          import re
+          in_proj = False
+          for line in open('packages/your-docs-server/pyproject.toml'):
+              s = line.strip()
+              if s.startswith('['):
+                  in_proj = (s == '[project]')
+              if in_proj:
+                  m = re.match(r'version\s*=\s*\"([^\"]+)\"', s)
+                  if m:
+                      print(m.group(1))
+                      break
+          ")
+          DEV_SUFFIX=$(date -u +%Y%m%d%H%M%S)
+          DEV_VERSION="${BASE_VERSION}.dev${DEV_SUFFIX}"
+          SERVER_DEV_VERSION="${SERVER_VERSION}.dev${DEV_SUFFIX}"
+          echo "base_version=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "dev_version=$DEV_VERSION" >> "$GITHUB_OUTPUT"
+          echo "server_version=$SERVER_VERSION" >> "$GITHUB_OUTPUT"
+          echo "server_dev_version=$SERVER_DEV_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Dev versions: mcp=$DEV_VERSION, server=$SERVER_DEV_VERSION"
+
+      - name: Patch versions for dev build
+        run: |
+          BASE="${{ steps.devver.outputs.base_version }}"
+          DEV="${{ steps.devver.outputs.dev_version }}"
+          SERVER="${{ steps.devver.outputs.server_version }}"
+          SERVER_DEV="${{ steps.devver.outputs.server_dev_version }}"
+
+          # Patch main pyproject.toml
+          sed -i "s/^version = \"${BASE}\"/version = \"${DEV}\"/" pyproject.toml
+
+          # Patch docs_mcp/__init__.py
+          sed -i "s/__version__ = \"${BASE}\"/__version__ = \"${DEV}\"/" docs_mcp/__init__.py
+
+          # Patch meta-package version
+          sed -i "s/^version = \"${SERVER}\"/version = \"${SERVER_DEV}\"/" packages/your-docs-server/pyproject.toml
+
+          # Patch meta-package dependency pin to accept dev version
+          sed -i "s/\"your-docs-mcp\[server\]>=.*\"/\"your-docs-mcp[server]>=${DEV}\"/" packages/your-docs-server/pyproject.toml
+
+      - name: Build main package
+        run: |
+          python -m build
+          twine check dist/*
+
+      - name: Upload main package artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: main-dev-dist
+          path: dist/
+
+      - name: Build meta-package
+        run: |
+          python -m build packages/your-docs-server/
+          twine check packages/your-docs-server/dist/*
+
+      - name: Upload meta-package artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: meta-dev-dist
+          path: packages/your-docs-server/dist/
+
+  publish-main-testpypi:
+    name: Publish your-docs-mcp to TestPyPI
+    needs: build-dev
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/your-docs-mcp
+    permissions:
+      id-token: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: main-dev-dist
+          path: dist/
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  publish-meta-testpypi:
+    name: Publish your-docs-server to TestPyPI
+    needs: publish-main-testpypi
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi-meta
+      url: https://test.pypi.org/p/your-docs-server
+    permissions:
+      id-token: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: meta-dev-dist
+          path: dist/
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  comment-pr:
+    name: Comment install commands
+    needs: [build-dev, publish-meta-testpypi]
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const devVersion = '${{ needs.build-dev.outputs.dev_version }}';
+            const serverDevVersion = '${{ needs.build-dev.outputs.server_dev_version }}';
+            const sha = '${{ github.event.pull_request.head.sha }}'.substring(0, 7);
+            const body = [
+              '## 📦 TestPyPI Preview Published',
+              '',
+              'Install the dev build to test:',
+              '```bash',
+              `pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ your-docs-mcp==${devVersion}`,
+              '```',
+              '',
+              'Or the server meta-package:',
+              '```bash',
+              `pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ your-docs-server==${serverDevVersion}`,
+              '```',
+              '',
+              `_Published from commit ${sha}_`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const botComment = comments.find(
+              c => c.user.type === 'Bot' && c.body.includes('TestPyPI Preview Published')
+            );
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body,
+              });
+            }

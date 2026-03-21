@@ -1,14 +1,17 @@
-"""Integration tests for client-side SPA routing (History API deep-linking).
+"""Integration tests for web server routing.
 
-The server must return index.html for any path that is not an API endpoint or
-a static-file path so that the JavaScript router can handle navigation.
+Verifies that the server routes requests correctly:
+- / redirects to /docs/
+- /docs/* serves server-rendered HTML pages
+- /api/* returns JSON
+- Unknown paths return 404
 """
 
 import pytest
 from fastapi.testclient import TestClient
 
-from docs_mcp.config import ServerConfig
-from docs_mcp.web import DocumentationWebServer
+from docs_mcp.core.config import ServerConfig
+from docs_mcp.web.app import DocumentationWebServer
 
 
 @pytest.fixture
@@ -21,67 +24,55 @@ def web_client(tmp_path):
     return TestClient(server.app, raise_server_exceptions=False)
 
 
-class TestSPACatchAllRoute:
-    """Verify the catch-all route serves index.html for SPA deep-links."""
+class TestWebRouting:
+    """Verify server routing for the new SSR architecture."""
 
-    def test_root_path_returns_index(self, web_client):
-        """GET / must return the SPA index page."""
-        response = web_client.get("/")
+    def test_root_redirects_to_docs(self, web_client):
+        """GET / must redirect to /docs/."""
+        response = web_client.get("/", follow_redirects=False)
+        assert response.status_code == 302
+        assert response.headers["location"] == "/docs/"
+
+    def test_docs_home_returns_html(self, web_client):
+        """GET /docs/ must return the documentation landing page."""
+        response = web_client.get("/docs/")
         assert response.status_code == 200
         assert "text/html" in response.headers.get("content-type", "")
 
-    def test_known_view_path_returns_index(self, web_client):
-        """GET /toc (a named SPA view) must return the SPA index page."""
-        response = web_client.get("/toc")
+    def test_docs_search_returns_html(self, web_client):
+        """GET /docs/search returns the search page."""
+        response = web_client.get("/docs/search")
         assert response.status_code == 200
         assert "text/html" in response.headers.get("content-type", "")
 
-    def test_search_view_path_returns_index(self, web_client):
-        """GET /search must return the SPA index page."""
-        response = web_client.get("/search")
+    def test_docs_tags_returns_html(self, web_client):
+        """GET /docs/tags/ returns the tags page."""
+        response = web_client.get("/docs/tags/")
         assert response.status_code == 200
         assert "text/html" in response.headers.get("content-type", "")
 
-    def test_tags_view_path_returns_index(self, web_client):
-        """GET /tags must return the SPA index page."""
-        response = web_client.get("/tags")
-        assert response.status_code == 200
-        assert "text/html" in response.headers.get("content-type", "")
+    def test_unknown_category_returns_404(self, web_client):
+        """GET /docs/nonexistent/ returns 404."""
+        response = web_client.get("/docs/nonexistent/")
+        assert response.status_code == 404
 
-    def test_release_view_path_returns_index(self, web_client):
-        """GET /release must return the SPA index page."""
-        response = web_client.get("/release")
-        assert response.status_code == 200
-        assert "text/html" in response.headers.get("content-type", "")
-
-    def test_doc_path_returns_index(self, web_client):
-        """GET /doc/guides/getting-started must return the SPA index page."""
-        response = web_client.get("/doc/guides/getting-started")
-        assert response.status_code == 200
-        assert "text/html" in response.headers.get("content-type", "")
-
-    def test_deep_doc_path_returns_index(self, web_client):
-        """GET /doc/api/v2/endpoints/users must return the SPA index page."""
-        response = web_client.get("/doc/api/v2/endpoints/users")
-        assert response.status_code == 200
-        assert "text/html" in response.headers.get("content-type", "")
-
-    def test_unknown_path_returns_index(self, web_client):
-        """GET /some/arbitrary/path must return the SPA index page."""
-        response = web_client.get("/some/arbitrary/path")
-        assert response.status_code == 200
-        assert "text/html" in response.headers.get("content-type", "")
-
-    def test_api_routes_not_intercepted(self, web_client):
-        """API routes must NOT be intercepted by the catch-all route."""
+    def test_api_routes_return_json(self, web_client):
+        """API routes must return JSON, not HTML."""
         response = web_client.get("/api/health")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
 
-    def test_index_html_content_served(self, web_client):
-        """The catch-all response body must contain the SPA HTML."""
-        response = web_client.get("/doc/guides/intro")
+    def test_sitemap_returns_xml(self, web_client):
+        """GET /sitemap.xml returns valid XML."""
+        response = web_client.get("/sitemap.xml")
         assert response.status_code == 200
-        # The SPA HTML must load the JavaScript bundle
-        assert "app.js" in response.text
+        assert "application/xml" in response.headers.get("content-type", "")
+        assert "<?xml" in response.text
+
+    def test_robots_txt_returns_text(self, web_client):
+        """GET /robots.txt returns a text file."""
+        response = web_client.get("/robots.txt")
+        assert response.status_code == 200
+        assert "text/plain" in response.headers.get("content-type", "")
+        assert "User-agent" in response.text

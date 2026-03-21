@@ -10,15 +10,15 @@ from pathlib import Path
 
 import pytest
 
-from docs_mcp.config import ServerConfig
-from docs_mcp.models.document import Document
-from docs_mcp.services.cache import Cache
-from docs_mcp.services.hierarchy import (
+from docs_mcp.core.config import ServerConfig
+from docs_mcp.core.models.document import Document
+from docs_mcp.core.services.cache import Cache
+from docs_mcp.core.services.hierarchy import (
     build_category_tree,
     navigate_to_uri,
 )
-from docs_mcp.services.markdown import scan_markdown_files
-from docs_mcp.services.search import (
+from docs_mcp.core.services.markdown import scan_markdown_files
+from docs_mcp.core.services.search import (
     _extract_excerpt,
     _highlight_matches,
     search_content,
@@ -285,7 +285,7 @@ class TestServerHandlerCoverage:
     @pytest.fixture
     async def initialized_server(self, tmp_path):
         """Create an initialized server."""
-        from docs_mcp.server import DocumentationMCPServer
+        from docs_mcp.mcp.server import DocumentationMCPServer
 
         docs_dir = tmp_path / "docs"
         docs_dir.mkdir()

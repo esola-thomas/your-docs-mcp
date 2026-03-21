@@ -4,12 +4,12 @@ from datetime import datetime, timezone
 
 import pytest
 
-from docs_mcp.handlers.resources import (
+from docs_mcp.mcp.handlers.resources import (
     handle_resource_read,
     list_resources,
 )
-from docs_mcp.models.document import Document
-from docs_mcp.models.navigation import Category
+from docs_mcp.core.models.document import Document
+from docs_mcp.core.models.navigation import Category
 
 
 class TestHandleResourceRead:

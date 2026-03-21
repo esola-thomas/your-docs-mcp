@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found{% endblock %}
+{% block meta_description %}The page you are looking for could not be found.{% endblock %}
+
+{% block sidebar_content %}
+  <div class="sidebar-section">
+    <h3 class="sidebar-heading">Navigation</h3>
+    <ul class="sidebar-list">
+      <li><a href="/docs/" class="sidebar-link">Home</a></li>
+      <li><a href="/docs/search" class="sidebar-link">Search</a></li>
+      <li><a href="/docs/tags/" class="sidebar-link">Tags</a></li>
+    </ul>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <section class="error-page">
+    <div class="error-content">
+      <h1 class="error-code">404</h1>
+      <p class="error-message">The page you're looking for doesn't exist</p>
+      <p class="error-hint">It may have been moved, deleted, or the URL might be incorrect.</p>
+
+      <div class="error-actions">
+        <a href="/docs/" class="btn btn--primary">Go to Documentation Home</a>
+      </div>
+
+      <div class="error-search">
+        <p class="error-search-label">Or try searching:</p>
+        <form class="search-form" action="/docs/search" method="GET" role="search">
+          <label for="error-search-input" class="visually-hidden">Search documentation</label>
+          <input
+            type="search"
+            id="error-search-input"
+            name="q"
+            placeholder="Search documentation..."
+            autocomplete="off"
+            class="search-input"
+          >
+          <button type="submit" class="search-btn">Search</button>
+        </form>
+      </div>
+    </div>
+  </section>
+{% endblock %}

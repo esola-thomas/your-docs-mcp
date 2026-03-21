@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from docs_mcp.handlers.tools import (
+from docs_mcp.mcp.handlers.tools import (
     handle_generate_pdf_release,
     handle_get_all_tags,
     handle_get_document,
@@ -14,8 +14,8 @@ from docs_mcp.handlers.tools import (
     handle_search_by_tags,
     handle_search_documentation,
 )
-from docs_mcp.models.document import Document
-from docs_mcp.models.navigation import Category
+from docs_mcp.core.models.document import Document
+from docs_mcp.core.models.navigation import Category
 
 
 class TestHandleSearchDocumentation:
@@ -124,7 +124,7 @@ class TestHandleSearchDocumentation:
         """Test search uses default limit when not specified."""
         arguments = {"query": "test"}
 
-        with patch("docs_mcp.handlers.tools.search_content") as mock_search:
+        with patch("docs_mcp.mcp.handlers.tools.search_content") as mock_search:
             mock_search.return_value = []
             await handle_search_documentation(
                 arguments, sample_documents, sample_categories, search_limit=5
@@ -162,7 +162,7 @@ class TestHandleSearchDocumentation:
         """Test search handles exceptions gracefully."""
         arguments = {"query": "test"}
 
-        with patch("docs_mcp.handlers.tools.search_content") as mock_search:
+        with patch("docs_mcp.mcp.handlers.tools.search_content") as mock_search:
             mock_search.side_effect = Exception("Search error")
 
             results = await handle_search_documentation(
@@ -273,7 +273,7 @@ class TestHandleNavigateTo:
         """Test navigation handles exceptions gracefully."""
         arguments = {"uri": "docs://invalid"}
 
-        with patch("docs_mcp.handlers.tools.navigate_to_uri") as mock_navigate:
+        with patch("docs_mcp.mcp.handlers.tools.navigate_to_uri") as mock_navigate:
             mock_navigate.side_effect = Exception("Navigation error")
 
             result = await handle_navigate_to(arguments, sample_documents, sample_categories)
@@ -350,7 +350,7 @@ class TestHandleGetTableOfContents:
         """Test table of contents handles exceptions gracefully."""
         arguments = {}
 
-        with patch("docs_mcp.handlers.tools.get_table_of_contents") as mock_toc:
+        with patch("docs_mcp.mcp.handlers.tools.get_table_of_contents") as mock_toc:
             mock_toc.side_effect = Exception("TOC error")
 
             result = await handle_get_table_of_contents(
@@ -441,7 +441,7 @@ class TestHandleSearchByTags:
         """Test search by tags uses default limit."""
         arguments = {"tags": ["tutorial"]}
 
-        with patch("docs_mcp.handlers.tools.search_by_metadata") as mock_search:
+        with patch("docs_mcp.mcp.handlers.tools.search_by_metadata") as mock_search:
             mock_search.return_value = []
             await handle_search_by_tags(arguments, sample_documents, search_limit=5)
 
@@ -472,7 +472,7 @@ class TestHandleSearchByTags:
         """Test search by tags handles exceptions gracefully."""
         arguments = {"tags": ["test"]}
 
-        with patch("docs_mcp.handlers.tools.search_by_metadata") as mock_search:
+        with patch("docs_mcp.mcp.handlers.tools.search_by_metadata") as mock_search:
             mock_search.side_effect = Exception("Tag search error")
 
             results = await handle_search_by_tags(arguments, sample_documents, search_limit=10)
@@ -567,7 +567,7 @@ class TestHandleGetDocument:
         """Test get document handles exceptions gracefully."""
         arguments = {"uri": "docs://test"}
 
-        with patch("docs_mcp.handlers.tools.logger"):
+        with patch("docs_mcp.mcp.handlers.tools.logger"):
             # Simulate exception by making sample_documents invalid
             result = await handle_get_document(arguments, None)
 
@@ -847,7 +847,7 @@ class TestHandleGeneratePdfRelease:
             "owner": "Test Corp",
         }
 
-        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+        with patch("docs_mcp.mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
             # Mock successful process execution
             mock_process = MagicMock()
             mock_process.returncode = 0
@@ -865,7 +865,7 @@ class TestHandleGeneratePdfRelease:
         """Test generating PDF with minimal arguments (only version)."""
         arguments = {"version": "2.0.0"}
 
-        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+        with patch("docs_mcp.mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
             mock_process = MagicMock()
             mock_process.returncode = 0
             mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
@@ -880,7 +880,7 @@ class TestHandleGeneratePdfRelease:
         """Test generating PDF without version (uses current date)."""
         arguments = {"title": "My Docs"}
 
-        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+        with patch("docs_mcp.mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
             mock_process = MagicMock()
             mock_process.returncode = 0
             mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
@@ -901,7 +901,7 @@ class TestHandleGeneratePdfRelease:
             "version": "1.0.0",
         }
 
-        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+        with patch("docs_mcp.mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
             mock_process = MagicMock()
             mock_process.returncode = 0
             mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
@@ -925,7 +925,7 @@ class TestHandleGeneratePdfRelease:
             "owner": "ACME Corp",
         }
 
-        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+        with patch("docs_mcp.mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
             mock_process = MagicMock()
             mock_process.returncode = 0
             mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
@@ -949,7 +949,7 @@ class TestHandleGeneratePdfRelease:
         arguments = {"version": "1.0.0"}
 
         # Patch all possible script locations to not exist
-        with patch("docs_mcp.handlers.tools.Path.exists", return_value=False):
+        with patch("docs_mcp.mcp.handlers.tools.Path.exists", return_value=False):
             result = await handle_generate_pdf_release(arguments, docs_root)
 
             assert result["success"] is False
@@ -961,7 +961,7 @@ class TestHandleGeneratePdfRelease:
         """Test error handling when script execution fails."""
         arguments = {"version": "1.0.0"}
 
-        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+        with patch("docs_mcp.mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
             mock_process = MagicMock()
             mock_process.returncode = 1
             mock_process.communicate = AsyncMock(
@@ -980,7 +980,7 @@ class TestHandleGeneratePdfRelease:
         """Test exception handling during PDF generation."""
         arguments = {"version": "1.0.0"}
 
-        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+        with patch("docs_mcp.mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
             mock_subprocess.side_effect = Exception("Subprocess error")
 
             result = await handle_generate_pdf_release(arguments, mock_docs_root)
@@ -994,7 +994,7 @@ class TestHandleGeneratePdfRelease:
         """Test generating PDF with empty arguments dictionary."""
         arguments = {}
 
-        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+        with patch("docs_mcp.mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
             mock_process = MagicMock()
             mock_process.returncode = 0
             mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
@@ -1016,7 +1016,7 @@ class TestHandleGeneratePdfRelease:
             "confidential": False,
         }
 
-        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+        with patch("docs_mcp.mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
             mock_process = MagicMock()
             mock_process.returncode = 0
             mock_process.communicate = AsyncMock(return_value=(b"Success", b""))
@@ -1039,7 +1039,7 @@ class TestHandleGeneratePdfRelease:
         """Test that result has correct format on success."""
         arguments = {"version": "1.0.0"}
 
-        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+        with patch("docs_mcp.mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
             mock_process = MagicMock()
             mock_process.returncode = 0
             stdout = "Done\nOutput: /path/to/output.pdf\nManifest: /path/to/manifest.json"
@@ -1064,7 +1064,7 @@ class TestHandleGeneratePdfRelease:
             "version": "1.0.0",
         }
 
-        with patch("docs_mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
+        with patch("docs_mcp.mcp.handlers.tools.asyncio.create_subprocess_exec") as mock_subprocess:
             mock_process = MagicMock()
             mock_process.returncode = 0
             mock_process.communicate = AsyncMock(return_value=(b"Success", b""))

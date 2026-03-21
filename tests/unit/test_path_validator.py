@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from docs_mcp.security.path_validator import (
+from docs_mcp.core.security.path_validator import (
     PathValidationError,
     detect_symlink_cycle,
     is_path_safe,

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from docs_mcp.models.openapi import APIOperation, OpenAPISpecification
+from docs_mcp.core.models.openapi import APIOperation, OpenAPISpecification
 
 
 class TestAPIOperation:

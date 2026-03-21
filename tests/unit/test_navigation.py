@@ -2,7 +2,7 @@
 
 import pytest
 
-from docs_mcp.models.navigation import Category, NavigationContext
+from docs_mcp.core.models.navigation import Category, NavigationContext
 
 
 class TestCategoryModel:

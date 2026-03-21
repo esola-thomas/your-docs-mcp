@@ -1,0 +1,142 @@
+name: Release to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to release'
+        required: true
+        type: choice
+        options:
+          - your-docs-mcp
+          - your-docs-server
+      bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - custom
+      custom_version:
+        description: 'Custom version (only when bump=custom, format: X.Y.Z)'
+        required: false
+        type: string
+
+concurrency:
+  group: release-${{ inputs.package }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Bump & tag ${{ inputs.package }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Validate inputs
+        run: |
+          if [ "${{ inputs.bump }}" = "custom" ] && [ -z "${{ inputs.custom_version }}" ]; then
+            echo "::error::custom_version is required when bump=custom"
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Bump version
+        id: bump
+        run: |
+          PACKAGE_ARG=${{ inputs.package == 'your-docs-mcp' && 'mcp' || 'server' }}
+          if [ "${{ inputs.bump }}" = "custom" ]; then
+            BUMP_ARGS="--version ${{ inputs.custom_version }}"
+          else
+            BUMP_ARGS="--bump ${{ inputs.bump }}"
+          fi
+          NEW_VERSION=$(python scripts/bump_version.py --package "$PACKAGE_ARG" $BUMP_ARGS | tail -1)
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "::notice::Released version: $NEW_VERSION"
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "No changes to commit"; exit 1; }
+          git commit -m "release: ${{ inputs.package }} v${{ steps.bump.outputs.version }}"
+          git push origin HEAD:main
+
+      - name: Create and push tag
+        id: tag
+        run: |
+          TAG_PREFIX=${{ inputs.package == 'your-docs-mcp' && 'mcp-v' || 'server-v' }}
+          TAG="${TAG_PREFIX}${{ steps.bump.outputs.version }}"
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "${{ inputs.package }} v${{ steps.bump.outputs.version }}"
+          generate_release_notes: true
+
+  publish:
+    name: Publish ${{ inputs.package }} to PyPI
+    needs: release
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.package == 'your-docs-mcp' && 'pypi' || 'pypi-meta' }}
+      url: ${{ inputs.package == 'your-docs-mcp' && format('https://pypi.org/p/your-docs-mcp/{0}/', needs.release.outputs.version) || format('https://pypi.org/p/your-docs-server/{0}/', needs.release.outputs.version) }}
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout code at tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build package
+        run: |
+          if [ "${{ inputs.package }}" = "your-docs-mcp" ]; then
+            python -m build
+            twine check dist/*
+          else
+            python -m build packages/your-docs-server/
+            twine check packages/your-docs-server/dist/*
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-${{ inputs.package }}-${{ needs.release.outputs.version }}
+          path: |
+            dist/
+            packages/your-docs-server/dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: ${{ inputs.package == 'your-docs-mcp' && 'dist/' || 'packages/your-docs-server/dist/' }}

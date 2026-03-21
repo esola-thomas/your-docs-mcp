@@ -3,8 +3,8 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from docs_mcp.config import ServerConfig
-from docs_mcp.web import DocumentationWebServer
+from docs_mcp.core.config import ServerConfig
+from docs_mcp.web.app import DocumentationWebServer
 
 
 @pytest.fixture

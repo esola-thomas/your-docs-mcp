@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from docs_mcp.config import ServerConfig
-from docs_mcp.server import DocumentationMCPServer, serve
+from docs_mcp.core.config import ServerConfig
+from docs_mcp.mcp.server import DocumentationMCPServer, serve
 
 
 class TestDocumentationMCPServer:
@@ -65,7 +65,7 @@ class TestDocumentationMCPServer:
         server = DocumentationMCPServer(config)
 
         # Mock scan_markdown_files to raise an exception
-        with patch("docs_mcp.server.scan_markdown_files") as mock_scan:
+        with patch("docs_mcp.mcp.server.scan_markdown_files") as mock_scan:
             mock_scan.side_effect = Exception("Test error")
 
             # Should not raise, just log error
