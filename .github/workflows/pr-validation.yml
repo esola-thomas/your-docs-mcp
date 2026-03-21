@@ -137,31 +137,31 @@ jobs:
 
       - name: Check mcp version sync (pyproject.toml == __init__.py)
         run: |
-          PYPROJECT_VER=$(python3 -c "
-          import re
+          python3 - <<'PYEOF'
+          import re, sys
+          # Read pyproject.toml version
           in_proj = False
-          for line in open('pyproject.toml'):
+          pyproject_ver = None
+          for line in open("pyproject.toml"):
               s = line.strip()
-              if s.startswith('['):
-                  in_proj = (s == '[project]')
+              if s.startswith("["):
+                  in_proj = (s == "[project]")
               if in_proj:
-                  m = re.match(r'version\s*=\s*\"([^\"]+)\"', s)
+                  m = re.match(r'version\s*=\s*"([^"]+)"', s)
                   if m:
-                      print(m.group(1))
+                      pyproject_ver = m.group(1)
                       break
-          ")
-          INIT_VER=$(python3 -c "
-          import re
-          m = re.search(r'__version__\s*=\s*[\"'\'']([^\"'\']+)[\"'\'']', open('docs_mcp/__init__.py').read())
-          print(m.group(1))
-          ")
-          echo "pyproject.toml: $PYPROJECT_VER"
-          echo "__init__.py:    $INIT_VER"
-          if [ "$PYPROJECT_VER" != "$INIT_VER" ]; then
-            echo "::error::Version mismatch: pyproject.toml ($PYPROJECT_VER) != __init__.py ($INIT_VER)"
-            exit 1
-          fi
-          echo "Versions match: $PYPROJECT_VER"
+          # Read __init__.py version
+          content = open("docs_mcp/__init__.py").read()
+          m = re.search(r'__version__\s*=\s*["\x27]([^"\x27]+)["\x27]', content)
+          init_ver = m.group(1) if m else None
+          print(f"pyproject.toml: {pyproject_ver}")
+          print(f"__init__.py:    {init_ver}")
+          if pyproject_ver != init_ver:
+              print(f"::error::Version mismatch: pyproject.toml ({pyproject_ver}) != __init__.py ({init_ver})")
+              sys.exit(1)
+          print(f"Versions match: {pyproject_ver}")
+          PYEOF
 
   test-summary:
     name: Test Summary

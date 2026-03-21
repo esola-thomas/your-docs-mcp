@@ -122,13 +122,13 @@ class DocumentationWebServer:
         self._register_routes()
         self._register_mcp_sse_routes()
 
+        # Register HTMX partials BEFORE docs routes (more specific paths first)
+        partials_router = create_partials_router(documents, categories, config)
+        self.app.include_router(partials_router)
+
         # Register server-rendered docs routes
         docs_router = create_docs_router(documents, categories, config)
         self.app.include_router(docs_router)
-
-        # Register HTMX partials
-        partials_router = create_partials_router(documents, categories, config)
-        self.app.include_router(partials_router)
 
     def _register_mcp_handlers(self) -> None:
         """Register MCP protocol handlers for SSE transport."""

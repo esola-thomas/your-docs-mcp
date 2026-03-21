@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from docs_mcp.core.models.document import Document
+from docs_mcp.core.models.navigation import Category
 from docs_mcp.mcp.handlers.tools import (
     handle_generate_pdf_release,
     handle_get_all_tags,
@@ -14,8 +16,6 @@ from docs_mcp.mcp.handlers.tools import (
     handle_search_by_tags,
     handle_search_documentation,
 )
-from docs_mcp.core.models.document import Document
-from docs_mcp.core.models.navigation import Category
 
 
 class TestHandleSearchDocumentation:

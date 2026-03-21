@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from docs_mcp.core.models.document import Document
+from docs_mcp.core.services.hierarchy import build_category_tree
 from docs_mcp.mcp.handlers.tools import (
     handle_get_document,
     handle_get_table_of_contents,
@@ -12,8 +14,6 @@ from docs_mcp.mcp.handlers.tools import (
     handle_search_by_tags,
     handle_search_documentation,
 )
-from docs_mcp.core.models.document import Document
-from docs_mcp.core.services.hierarchy import build_category_tree
 
 
 @pytest.fixture
