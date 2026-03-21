@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Documentation Home{% endblock %}
+{% block meta_description %}Browse, search, and explore documentation. {{ doc_count }} documents across {{ category_count }} categories.{% endblock %}
+
+{% block sidebar_content %}
+  <div class="sidebar-section">
+    <h3 class="sidebar-heading">Categories</h3>
+    <ul class="sidebar-list">
+      {% for category in categories %}
+      <li>
+        <a href="/docs/{{ category.name }}/" class="sidebar-link">
+          {{ category.label | e }}
+          <span class="sidebar-badge">{{ category.document_count }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="sidebar-section">
+    <h3 class="sidebar-heading">Quick Links</h3>
+    <ul class="sidebar-list">
+      <li><a href="/docs/search" class="sidebar-link">Search</a></li>
+      <li><a href="/docs/tags/" class="sidebar-link">All Tags</a></li>
+    </ul>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <section class="hero">
+    <h1 class="hero-title">Documentation</h1>
+    <p class="hero-subtitle">Browse, search, and explore documentation</p>
+
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-value">{{ doc_count }}</span>
+        <span class="stat-label">Documents</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ category_count }}</span>
+        <span class="stat-label">Categories</span>
+      </div>
+    </div>
+
+    <form class="hero-search" action="/docs/search" method="GET" role="search">
+      <label for="hero-search-input" class="visually-hidden">Search documentation</label>
+      <input
+        type="search"
+        id="hero-search-input"
+        name="q"
+        placeholder="Search documentation..."
+        autocomplete="off"
+        class="hero-search-input"
+      >
+      <button type="submit" class="hero-search-btn">Search</button>
+    </form>
+  </section>
+
+  <section class="categories-grid">
+    <h2 class="section-title">Categories</h2>
+    <div class="card-grid">
+      {% for category in categories %}
+      <a href="/docs/{{ category.name }}/" class="category-card">
+        <h3 class="category-card-title">{{ category.label | e }}</h3>
+        <p class="category-card-count">{{ category.document_count }} document{{ 's' if category.document_count != 1 else '' }}</p>
+        {% if category.description %}
+        <p class="category-card-desc">{{ category.description | e }}</p>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="quick-links">
+    <h2 class="section-title">Quick Links</h2>
+    <div class="quick-links-grid">
+      <a href="/docs/search" class="quick-link-card">
+        <span class="quick-link-icon">&#128269;</span>
+        <span class="quick-link-label">Search Docs</span>
+      </a>
+      <a href="/docs/tags/" class="quick-link-card">
+        <span class="quick-link-icon">&#127991;</span>
+        <span class="quick-link-label">Browse Tags</span>
+      </a>
+      {% if categories %}
+      <a href="/docs/{{ categories[0].name }}/" class="quick-link-card">
+        <span class="quick-link-icon">&#128196;</span>
+        <span class="quick-link-label">Get Started</span>
+      </a>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

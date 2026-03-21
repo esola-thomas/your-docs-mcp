@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from docs_mcp.models.document import Document
-from docs_mcp.models.navigation import Category
-from docs_mcp.services.hierarchy import (
+from docs_mcp.core.models.document import Document
+from docs_mcp.core.models.navigation import Category
+from docs_mcp.core.services.hierarchy import (
     HierarchyError,
     _count_documents_recursive,
     _get_category_context,
@@ -348,7 +348,7 @@ class TestGetTableOfContents:
     @pytest.fixture(autouse=True)
     def clear_cache(self):
         """Clear the cache before each test."""
-        from docs_mcp.services.cache import get_cache
+        from docs_mcp.core.services.cache import get_cache
 
         get_cache().clear()
         yield
@@ -394,7 +394,7 @@ class TestGetTableOfContents:
     def test_toc_includes_documents(self, sample_documents):
         """Test that TOC includes documents."""
         # Clear cache to avoid pollution from other tests
-        from docs_mcp.services.cache import get_cache
+        from docs_mcp.core.services.cache import get_cache
 
         get_cache().clear()
 

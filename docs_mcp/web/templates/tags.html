@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}{% if tag %}Tag: {{ tag | e }}{% else %}All Tags{% endif %}{% endblock %}
+{% block meta_description %}{% if tag %}Documents tagged with "{{ tag | e }}"{% else %}Browse all documentation tags{% endif %}{% endblock %}
+
+{% block sidebar_content %}
+  <div class="sidebar-section">
+    <h3 class="sidebar-heading">Tags</h3>
+    <ul class="sidebar-list">
+      <li>
+        <a href="/docs/tags/" class="sidebar-link{% if not tag %} sidebar-link--active{% endif %}">
+          All Tags
+        </a>
+      </li>
+      {% if all_tags %}
+      {% for t in all_tags %}
+      <li>
+        <a href="/docs/tags/{{ t.name | e }}" class="sidebar-link{% if tag == t.name %} sidebar-link--active{% endif %}">
+          {{ t.name | e }}
+          <span class="sidebar-badge">{{ t.count }}</span>
+        </a>
+      </li>
+      {% endfor %}
+      {% endif %}
+    </ul>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <section class="tags-page">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol class="breadcrumb-list">
+        <li class="breadcrumb-item">
+          <a href="/docs/">Home</a>
+        </li>
+        <li class="breadcrumb-item{% if not tag %} breadcrumb-item--current{% endif %}">
+          {% if tag %}
+          <a href="/docs/tags/">Tags</a>
+          {% else %}
+          <span aria-current="page">Tags</span>
+          {% endif %}
+        </li>
+        {% if tag %}
+        <li class="breadcrumb-item breadcrumb-item--current">
+          <span aria-current="page">{{ tag | e }}</span>
+        </li>
+        {% endif %}
+      </ol>
+    </nav>
+
+    {% if tag %}
+    <header class="tags-header">
+      <h1 class="tags-title">Tag: <span class="tag-highlight">{{ tag | e }}</span></h1>
+      <p class="tags-count">{{ documents | length }} document{{ 's' if documents | length != 1 else '' }} with this tag</p>
+    </header>
+
+    {% if documents %}
+    <div class="doc-list">
+      {% for doc in documents %}
+      <article class="doc-list-item">
+        <h2 class="doc-list-title">
+          <a href="{{ doc.url }}">{{ doc.title | e }}</a>
+        </h2>
+
+        {% if doc.excerpt %}
+        <p class="doc-list-excerpt">{{ doc.excerpt | e }}</p>
+        {% endif %}
+
+        <div class="doc-list-meta">
+          {% if doc.tags %}
+          <div class="doc-tags">
+            {% for t in doc.tags %}
+            <a href="/docs/tags/{{ t | e }}" class="tag-pill tag-pill--small{% if t == tag %} tag-pill--active{% endif %}">
+              {{ t | e }}
+            </a>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if doc.last_modified %}
+          <time class="doc-list-date" datetime="{{ doc.last_modified }}">
+            {{ doc.last_modified }}
+          </time>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">No documents found with the tag '<strong>{{ tag | e }}</strong>'.</p>
+    {% endif %}
+
+    {% else %}
+    <header class="tags-header">
+      <h1 class="tags-title">All Tags</h1>
+      {% if all_tags %}
+      <p class="tags-count">{{ all_tags | length }} tag{{ 's' if all_tags | length != 1 else '' }}</p>
+      {% endif %}
+    </header>
+
+    {% if all_tags %}
+    <div class="tag-cloud">
+      {% for t in all_tags %}
+      <a href="/docs/tags/{{ t.name | e }}" class="tag-cloud-item tag-cloud-item--size-{{ [t.size | default(1, true), 5] | min }}">
+        <span class="tag-cloud-label">{{ t.name | e }}</span>
+        <span class="tag-cloud-count">{{ t.count }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">No tags have been created yet.</p>
+    {% endif %}
+    {% endif %}
+  </section>
+{% endblock %}

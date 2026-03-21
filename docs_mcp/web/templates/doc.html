@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}{{ doc.title | e }}{% endblock %}
+{% block meta_description %}{{ doc.excerpt(160) | e }}{% endblock %}
+
+{# Recursive macro for sidebar navigation tree #}
+{% macro render_nav_tree(items, current_path) %}
+<ul class="sidebar-tree">
+  {% for item in items %}
+  <li class="sidebar-tree-item{% if item.active %} sidebar-tree-item--active{% endif %}{% if item.expanded %} sidebar-tree-item--expanded{% endif %}">
+    {% if item.children %}
+    <details{% if item.expanded %} open{% endif %}>
+      <summary>
+        <a href="{{ item.url }}" class="sidebar-link{% if item.active %} sidebar-link--active{% endif %}">
+          {{ item.label | e }}
+        </a>
+      </summary>
+      {{ render_nav_tree(item.children, current_path) }}
+    </details>
+    {% else %}
+    <a href="{{ item.url }}" class="sidebar-link{% if item.active %} sidebar-link--active{% endif %}">
+      {{ item.label | e }}
+    </a>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
+
+{% block sidebar_content %}
+  <div class="sidebar-section">
+    <h3 class="sidebar-heading">Navigation</h3>
+    {% if nav_tree %}
+    {{ render_nav_tree(nav_tree, current_path | default('', true)) }}
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="doc-layout">
+    <article class="doc-article">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <ol class="breadcrumb-list">
+          <li class="breadcrumb-item">
+            <a href="/docs/">Home</a>
+          </li>
+          {% for crumb in breadcrumbs %}
+          <li class="breadcrumb-item{% if loop.last %} breadcrumb-item--current{% endif %}">
+            {% if loop.last %}
+            <span aria-current="page">{{ crumb.label | e }}</span>
+            {% else %}
+            <a href="{{ crumb.url }}">{{ crumb.label | e }}</a>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ol>
+      </nav>
+
+      <header class="doc-header">
+        <h1 class="doc-title">{{ doc.title | e }}</h1>
+        <div class="doc-meta">
+          {% if doc.last_modified %}
+          <time class="doc-date" datetime="{{ doc.last_modified }}">
+            Last updated: {{ doc.last_modified }}
+          </time>
+          {% endif %}
+
+          {% if doc.tags %}
+          <div class="doc-tags">
+            {% for tag in doc.tags %}
+            <a href="/docs/tags/{{ tag | e }}" class="tag-pill">{{ tag | e }}</a>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </header>
+
+      <div class="doc-content">
+        {{ content_html | safe }}
+      </div>
+
+      {% if doc.tags %}
+      <footer class="doc-footer-tags">
+        <h2 class="doc-footer-tags-title">Tags</h2>
+        <div class="doc-tags">
+          {% for tag in doc.tags %}
+          <a href="/docs/tags/{{ tag | e }}" class="tag-pill">{{ tag | e }}</a>
+          {% endfor %}
+        </div>
+      </footer>
+      {% endif %}
+
+      {% if github_url %}
+      <div class="doc-edit">
+        <a href="{{ github_url }}" class="edit-link" target="_blank" rel="noopener noreferrer">
+          Edit on GitHub
+        </a>
+      </div>
+      {% endif %}
+
+      <nav class="prev-next-nav" aria-label="Document navigation">
+        {% if prev_doc %}
+        <a href="{{ prev_doc.url }}" class="prev-next-link prev-next-link--prev">
+          <span class="prev-next-direction">Previous</span>
+          <span class="prev-next-title">{{ prev_doc.title | e }}</span>
+        </a>
+        {% else %}
+        <span class="prev-next-link prev-next-link--placeholder"></span>
+        {% endif %}
+
+        {% if next_doc %}
+        <a href="{{ next_doc.url }}" class="prev-next-link prev-next-link--next">
+          <span class="prev-next-direction">Next</span>
+          <span class="prev-next-title">{{ next_doc.title | e }}</span>
+        </a>
+        {% endif %}
+      </nav>
+    </article>
+
+    {% if headings %}
+    <nav class="page-toc" aria-label="Table of contents">
+      <h2 class="page-toc-title">On this page</h2>
+      <ul class="page-toc-list">
+        {% for heading in headings %}
+        <li class="page-toc-item page-toc-item--level-{{ heading.level }}">
+          <a href="#{{ heading.id | e }}" class="page-toc-link">{{ heading.text | e }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+{% endblock %}

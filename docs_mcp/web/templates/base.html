@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Documentation{% endblock %} - Your Docs</title>
+  <meta name="description" content="{% block meta_description %}Documentation powered by Your Docs MCP{% endblock %}">
+
+  {% block og_tags %}
+  <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{{ self.meta_description() }}{% endblock %}">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="{% block og_url %}{{ request_url | default('', true) }}{% endblock %}">
+  {% endblock %}
+
+  {% block canonical %}
+  <link rel="canonical" href="{{ canonical_url | default('', true) }}">
+  {% endblock %}
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/static/css/docs.css">
+
+  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <header class="site-header">
+    <nav class="header-nav">
+      <div class="header-left">
+        <button class="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+          <span class="hamburger-icon"></span>
+        </button>
+        <a href="/docs/" class="site-logo">
+          <span class="logo-icon">&#128214;</span>
+          <span class="logo-text">Documentation</span>
+        </a>
+      </div>
+
+      <div class="header-center">
+        <form class="header-search" action="/docs/search" method="GET" role="search">
+          <label for="header-search-input" class="visually-hidden">Search documentation</label>
+          <input
+            type="search"
+            id="header-search-input"
+            name="q"
+            placeholder="Search docs..."
+            autocomplete="off"
+            aria-label="Search documentation"
+          >
+          <button type="submit" class="search-submit" aria-label="Submit search">
+            &#128269;
+          </button>
+        </form>
+      </div>
+
+      <div class="header-right">
+        <button class="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
+          <span class="theme-icon-light">&#9728;</span>
+          <span class="theme-icon-dark">&#127769;</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <nav class="sidebar-nav" aria-label="Documentation navigation">
+        {% block sidebar_content %}{% endblock %}
+      </nav>
+    </aside>
+
+    <main id="main-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-content">
+      <p>Powered by <a href="https://github.com/esola-thomas/your-docs-mcp" rel="noopener noreferrer">Your Docs MCP</a></p>
+      {% block footer_extra %}{% endblock %}
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      // Theme toggle
+      var THEME_KEY = 'theme';
+      var htmlEl = document.documentElement;
+      var stored = localStorage.getItem(THEME_KEY);
+
+      if (stored) {
+        htmlEl.setAttribute('data-theme', stored);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        htmlEl.setAttribute('data-theme', 'dark');
+      }
+
+      var themeBtn = document.querySelector('.theme-toggle');
+      if (themeBtn) {
+        themeBtn.addEventListener('click', function () {
+          var current = htmlEl.getAttribute('data-theme');
+          var next = current === 'dark' ? 'light' : 'dark';
+          htmlEl.setAttribute('data-theme', next);
+          localStorage.setItem(THEME_KEY, next);
+        });
+      }
+
+      // Mobile menu toggle
+      var menuBtn = document.querySelector('.mobile-menu-toggle');
+      var sidebar = document.getElementById('sidebar');
+      if (menuBtn && sidebar) {
+        menuBtn.addEventListener('click', function () {
+          var expanded = menuBtn.getAttribute('aria-expanded') === 'true';
+          menuBtn.setAttribute('aria-expanded', String(!expanded));
+          sidebar.classList.toggle('sidebar--open');
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

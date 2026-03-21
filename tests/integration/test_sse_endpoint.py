@@ -8,8 +8,8 @@ import pytest
 import pytest_asyncio
 import uvicorn
 
-from docs_mcp.config import ServerConfig
-from docs_mcp.web import DocumentationWebServer
+from docs_mcp.core.config import ServerConfig
+from docs_mcp.web.app import DocumentationWebServer
 
 
 def _get_free_port() -> int:

@@ -11,17 +11,15 @@ from __future__ import annotations
 import asyncio
 import sys
 
-from docs_mcp.config import ServerConfig, load_config
-from docs_mcp.server import serve, serve_both, serve_web_only
-from docs_mcp.utils.logger import logger, setup_logging
 
-
-def _validate_config_and_setup() -> ServerConfig:
+def _validate_config_and_setup():  # type: ignore[no-untyped-def]
     """Common setup: load config, setup logging, validate sources.
 
     Returns:
         Validated ServerConfig instance
     """
+    from docs_mcp.core.config import load_config
+    from docs_mcp.core.utils.logger import setup_logging
 
     config = load_config()
     setup_logging(config.log_level)
@@ -38,15 +36,18 @@ def _validate_config_and_setup() -> ServerConfig:
 
 
 def mcp_main() -> None:
-    """Entry point for MCP server only (your-docs-mcp command).
-
-    This runs the MCP server with stdio transport for AI clients like
-    Claude Desktop or VS Code Copilot. No web server is started.
-    """
+    """Entry point for MCP server only (your-docs-mcp command)."""
     try:
-        config = _validate_config_and_setup()
+        from docs_mcp.mcp.server import serve
+    except ImportError as e:
+        print(f"Missing dependency: {e}", file=sys.stderr)
+        print("Reinstall with: pip install your-docs-mcp", file=sys.stderr)
+        sys.exit(1)
 
-        # Force disable web server for pure MCP mode
+    try:
+        from docs_mcp.core.utils.logger import logger
+
+        config = _validate_config_and_setup()
         config.enable_web_server = False
 
         logger.info("Starting MCP Server (stdio transport)")
@@ -61,12 +62,18 @@ def mcp_main() -> None:
 
 
 def web_main() -> None:
-    """Entry point for web server only (your-docs-web command).
-
-    This runs the REST API and browser UI without the MCP stdio server.
-    Useful for standalone documentation browsing or API access.
-    """
+    """Entry point for web server only (your-docs-web command)."""
     try:
+        from docs_mcp.web.app import DocumentationWebServer  # noqa: F401
+    except ImportError as e:
+        print(f"Missing dependency: {e}", file=sys.stderr)
+        print("Install with: pip install your-docs-mcp[web]", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        from docs_mcp.core.utils.logger import logger
+        from docs_mcp.mcp.server import serve_web_only
+
         config = _validate_config_and_setup()
 
         logger.info("Starting Web Server only")
@@ -83,18 +90,21 @@ def web_main() -> None:
 
 
 def main() -> None:
-    """Entry point for both servers (your-docs-server command).
-
-    This runs both the MCP server (stdio) and web server concurrently.
-    The MCP server uses stdio transport, web server uses HTTP.
-
-    Note: When using with MCP clients, prefer 'your-docs-mcp' command
-    to avoid potential stdio conflicts with web server logging.
-    """
+    """Entry point for both servers (your-docs-server command)."""
     try:
-        config = _validate_config_and_setup()
+        from docs_mcp.mcp.server import serve_both  # noqa: F401
+    except ImportError as e:
+        print(f"Missing dependency: {e}", file=sys.stderr)
+        print(
+            "Install with: pip install your-docs-server  (or: pip install your-docs-mcp[server])",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
-        # Always enable web server for your-docs-server command
+    try:
+        from docs_mcp.core.utils.logger import logger
+
+        config = _validate_config_and_setup()
         config.enable_web_server = True
 
         logger.info("Starting Markdown MCP Server")
@@ -102,7 +112,6 @@ def main() -> None:
             f"Web interface will be available at http://{config.web_host}:{config.web_port}"
         )
 
-        # Run MCP server (with web server enabled)
         asyncio.run(serve_both(config))
 
     except KeyboardInterrupt:

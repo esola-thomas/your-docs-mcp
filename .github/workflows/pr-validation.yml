@@ -127,10 +127,46 @@ jobs:
           generate-report: 'true'
           upload-report: 'true'
 
+  verify-versions:
+    name: Verify version consistency
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Check mcp version sync (pyproject.toml == __init__.py)
+        run: |
+          python3 - <<'PYEOF'
+          import re, sys
+          # Read pyproject.toml version
+          in_proj = False
+          pyproject_ver = None
+          for line in open("pyproject.toml"):
+              s = line.strip()
+              if s.startswith("["):
+                  in_proj = (s == "[project]")
+              if in_proj:
+                  m = re.match(r'version\s*=\s*"([^"]+)"', s)
+                  if m:
+                      pyproject_ver = m.group(1)
+                      break
+          # Read __init__.py version
+          content = open("docs_mcp/__init__.py").read()
+          m = re.search(r'__version__\s*=\s*["\x27]([^"\x27]+)["\x27]', content)
+          init_ver = m.group(1) if m else None
+          print(f"pyproject.toml: {pyproject_ver}")
+          print(f"__init__.py:    {init_ver}")
+          if pyproject_ver != init_ver:
+              print(f"::error::Version mismatch: pyproject.toml ({pyproject_ver}) != __init__.py ({init_ver})")
+              sys.exit(1)
+          print(f"Versions match: {pyproject_ver}")
+          PYEOF
+
   test-summary:
     name: Test Summary
     runs-on: ubuntu-latest
-    needs: [test, lint, security, documentation]
+    needs: [test, lint, security, documentation, verify-versions]
     if: always()
 
     steps:
@@ -140,6 +176,7 @@ jobs:
           echo "Lint job status: ${{ needs.lint.result }}"
           echo "Security job status: ${{ needs.security.result }}"
           echo "Documentation job status: ${{ needs.documentation.result }}"
+          echo "Version check status: ${{ needs.verify-versions.result }}"
 
           if [ "${{ needs.test.result }}" != "success" ]; then
             echo "❌ Tests failed"
@@ -153,6 +190,11 @@ jobs:
 
           if [ "${{ needs.documentation.result }}" != "success" ]; then
             echo "❌ Documentation validation failed"
+            exit 1
+          fi
+
+          if [ "${{ needs.verify-versions.result }}" != "success" ]; then
+            echo "❌ Version consistency check failed"
             exit 1
           fi
 

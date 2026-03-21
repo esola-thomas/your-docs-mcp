@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from docs_mcp.models.document import Document
-from docs_mcp.services.markdown import (
+from docs_mcp.core.models.document import Document
+from docs_mcp.core.services.markdown import (
     MarkdownParseError,
     _extract_frontmatter,
     _extract_title,
