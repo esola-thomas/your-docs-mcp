@@ -93,7 +93,7 @@ jobs:
           twine check dist/*
 
       - name: Upload main package artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: main-dev-dist
           path: dist/
@@ -104,7 +104,7 @@ jobs:
           twine check packages/your-docs-server/dist/*
 
       - name: Upload meta-package artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: meta-dev-dist
           path: packages/your-docs-server/dist/
