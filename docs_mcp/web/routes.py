@@ -26,15 +26,15 @@ def _create_templates(config: ServerConfig) -> Jinja2Templates:
     User templates shadow defaults via ChoiceLoader — users can override
     specific templates (e.g., home.html) while inheriting the rest.
     """
-    loaders = []
+    templates = Jinja2Templates(directory=str(_default_templates_dir))
     if config.custom_templates_dir and config.custom_templates_dir.is_dir():
-        loaders.append(FileSystemLoader(str(config.custom_templates_dir)))
-    loaders.append(FileSystemLoader(str(_default_templates_dir)))
-
-    from jinja2 import Environment
-
-    env = Environment(loader=ChoiceLoader(loaders), autoescape=True)
-    return Jinja2Templates(env=env)
+        templates.env.loader = ChoiceLoader(
+            [
+                FileSystemLoader(str(config.custom_templates_dir)),
+                FileSystemLoader(str(_default_templates_dir)),
+            ]
+        )
+    return templates
 
 
 def create_docs_router(
@@ -151,7 +151,7 @@ def create_docs_router(
                 "categories": root_categories,
             }
         )
-        return templates.TemplateResponse("home.html", ctx)
+        return templates.TemplateResponse(request, "home.html", ctx)
 
     @router.get("/docs/search", response_class=HTMLResponse)
     async def docs_search(request: Request, q: str = "") -> Response:
@@ -181,7 +181,7 @@ def create_docs_router(
 
         ctx = _base_context(request)
         ctx.update({"query": q, "results": results})
-        return templates.TemplateResponse("search.html", ctx)
+        return templates.TemplateResponse(request, "search.html", ctx)
 
     @router.get("/docs/tags/", response_class=HTMLResponse)
     async def docs_all_tags(request: Request) -> Response:
@@ -193,7 +193,7 @@ def create_docs_router(
 
         ctx = _base_context(request)
         ctx.update({"tag": None, "tag_counts": tag_counts, "documents_for_tag": []})
-        return templates.TemplateResponse("tags.html", ctx)
+        return templates.TemplateResponse(request, "tags.html", ctx)
 
     @router.get("/docs/tags/{tag}", response_class=HTMLResponse)
     async def docs_tag(request: Request, tag: str) -> Response:
@@ -214,7 +214,7 @@ def create_docs_router(
                 "uri_to_url": _uri_to_url,
             }
         )
-        return templates.TemplateResponse("tags.html", ctx)
+        return templates.TemplateResponse(request, "tags.html", ctx)
 
     @router.get("/docs/{category}/", response_class=HTMLResponse)
     async def docs_category(request: Request, category: str) -> Response:
@@ -223,7 +223,7 @@ def create_docs_router(
 
         if category_uri not in categories:
             ctx = _base_context(request)
-            return templates.TemplateResponse("404.html", ctx, status_code=404)
+            return templates.TemplateResponse(request, "404.html", ctx, status_code=404)
 
         cat = categories[category_uri]
 
@@ -246,7 +246,7 @@ def create_docs_router(
                 "breadcrumbs": breadcrumbs,
             }
         )
-        return templates.TemplateResponse("category.html", ctx)
+        return templates.TemplateResponse(request, "category.html", ctx)
 
     @router.get("/docs/{category}/{slug}", response_class=HTMLResponse)
     async def docs_document(request: Request, category: str, slug: str) -> Response:
@@ -256,7 +256,7 @@ def create_docs_router(
 
         if not doc:
             ctx = _base_context(request)
-            return templates.TemplateResponse("404.html", ctx, status_code=404)
+            return templates.TemplateResponse(request, "404.html", ctx, status_code=404)
 
         # Render markdown to HTML
         rendered = render_markdown(doc.content)
@@ -291,7 +291,7 @@ def create_docs_router(
                 "current_uri": doc.uri,
             }
         )
-        return templates.TemplateResponse("doc.html", ctx)
+        return templates.TemplateResponse(request, "doc.html", ctx)
 
     @router.get("/sitemap.xml", response_class=Response)
     async def sitemap(request: Request) -> Response:
