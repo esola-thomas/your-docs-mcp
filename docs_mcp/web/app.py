@@ -1,4 +1,4 @@
-"""Web server for documentation browsing with MCP SSE transport support."""
+"""Web server for documentation browsing with MCP SSE and Streamable HTTP transport support."""
 
 from pathlib import Path
 from typing import Any
@@ -90,14 +90,23 @@ class DocumentationWebServer:
         self.documents = documents
         self.categories = categories
 
-        # Create the MCP server for SSE transport (only if MCP transport is enabled)
+        # Create the MCP server for SSE/Streamable HTTP transport
         if self.config.enable_mcp_transport:
             self.mcp_server = Server("hierarchical-docs-mcp")
             register_mcp_handlers(self.mcp_server, self.documents, self.categories, self.config)
             self.sse_transport = SseServerTransport("/messages/")
+
+            from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
+
+            self.http_session_manager = StreamableHTTPSessionManager(
+                app=self.mcp_server,
+                json_response=False,
+                stateless=False,
+            )
         else:
             self.mcp_server = None
             self.sse_transport = None
+            self.http_session_manager = None
 
         self.app = FastAPI(
             title=config.branding.site_name,
@@ -131,6 +140,7 @@ class DocumentationWebServer:
         self._register_routes()
         if self.config.enable_mcp_transport:
             self._register_mcp_sse_routes()
+            self._register_mcp_http_routes()
 
         # Register HTMX partials BEFORE docs routes (more specific paths first)
         partials_router = create_partials_router(documents, categories, config)
@@ -169,6 +179,34 @@ class DocumentationWebServer:
 
         for route in reversed(sse_routes_app.routes):
             self.app.router.routes.insert(0, route)
+
+    def _register_mcp_http_routes(self) -> None:
+        """Register Streamable HTTP MCP transport at /mcp.
+
+        This endpoint allows MCP clients (e.g. Claude Code) to connect
+        over standard HTTP POST with SSE responses, as an alternative to
+        the legacy SSE+messages transport.
+        """
+        import contextlib
+
+        # Attach lifespan to the main app so sessions are cleaned up on shutdown
+        original_lifespan = self.app.router.lifespan_context
+
+        @contextlib.asynccontextmanager
+        async def combined_lifespan(app: FastAPI):
+            async with contextlib.AsyncExitStack() as stack:
+                if original_lifespan:
+                    await stack.enter_async_context(original_lifespan(app))
+                await stack.enter_async_context(self.http_session_manager.run())
+                yield
+
+        self.app.router.lifespan_context = combined_lifespan
+
+        @self.app.api_route("/mcp", methods=["GET", "POST", "DELETE"])
+        async def mcp_endpoint(request: Request) -> StarletteResponse:
+            """Streamable HTTP MCP endpoint for AI tool access."""
+            logger.info("MCP Streamable HTTP request: %s", request.method)
+            return await self.http_session_manager.handle_request(request)
 
     def _register_routes(self) -> None:
         """Register API routes."""
