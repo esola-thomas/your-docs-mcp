@@ -8,37 +8,35 @@ Hierarchical Documentation MCP Server — gives AI assistants structured access 
 - **Test**: `pytest` (all) or `pytest tests/unit/` `tests/integration/` `tests/contract/`
 - **Lint**: `ruff check .` and `ruff format .`
 - **Type check**: `mypy docs_mcp/`
-- **Run MCP server**: `your-docs-mcp` (stdio)
-- **Run web server**: `your-docs-web` (HTTP on port 8123)
-- **Run both**: `your-docs-server`
+- **Run MCP server**: `your-docs-mcp` (stdio, for AI clients)
+- **Run web server**: `your-docs-server` (HTTP on port 8123, with MCP SSE transport)
 - **Validate docs**: `python scripts/validate_docs.py`
 
 ## Architecture
 
 ```
 docs_mcp/
-├── __main__.py          # CLI entry points (mcp_main, web_main, main)
-├── server.py            # MCP server (FastMCP, stdio transport)
-├── config.py            # Pydantic settings (env vars, YAML config)
-├── web.py               # FastAPI web server + REST API
-├── handlers/
-│   ├── tools.py         # MCP tool implementations (search, navigate, PDF)
-│   └── resources.py     # MCP resource handlers
-├── models/
-│   ├── document.py      # Document, DocumentationSource models
-│   ├── navigation.py    # Category, SearchResult models
-│   └── openapi.py       # OpenAPI spec models
-├── services/
-│   ├── markdown.py      # Markdown parsing, YAML frontmatter scanning
-│   ├── hierarchy.py     # Category tree building, navigation
-│   ├── search.py        # Full-text search with relevance scoring
-│   ├── vector.py        # ChromaDB semantic search (optional)
-│   └── cache.py         # TTL caching with auto-invalidation
-├── security/
-│   ├── path_validator.py # Directory traversal prevention
-│   └── sanitizer.py     # Query input sanitization
-└── utils/
-    └── logger.py        # Structured logging
+├── __main__.py          # CLI entry points (mcp_main, main)
+├── core/
+│   ├── config.py        # Pydantic settings (env vars, YAML config)
+│   ├── models/          # Document, Category, SearchResult models
+│   ├── services/        # Markdown parsing, hierarchy, search, cache
+│   ├── security/        # Path validation, input sanitization
+│   └── utils/           # Structured logging
+├── mcp/
+│   ├── server.py        # MCP server (stdio transport)
+│   └── handlers/
+│       ├── registry.py  # Shared MCP handler registration (tools + resources)
+│       ├── tools.py     # MCP tool implementations (search, navigate, PDF)
+│       └── resources.py # MCP resource handlers
+├── web/
+│   ├── app.py           # FastAPI web server + REST API + MCP SSE
+│   ├── routes.py        # Server-rendered documentation pages
+│   ├── partials.py      # HTMX partial endpoints
+│   ├── templates/       # Jinja2 templates
+│   └── static/          # CSS, JS, vendor assets
+├── vector/              # ChromaDB semantic search (optional)
+└── pdf/                 # PDF documentation generation
 ```
 
 ## Conventions

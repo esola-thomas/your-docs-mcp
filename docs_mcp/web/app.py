@@ -1,6 +1,5 @@
 """Web server for documentation browsing with MCP SSE transport support."""
 
-import json
 from pathlib import Path
 from typing import Any
 
@@ -10,7 +9,6 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from mcp.server import Server
 from mcp.server.sse import SseServerTransport
-from mcp.types import Resource, Tool
 from pydantic import BaseModel
 from starlette.applications import Starlette
 from starlette.responses import Response as StarletteResponse
@@ -20,7 +18,8 @@ from docs_mcp.core.config import ServerConfig
 from docs_mcp.core.models.document import Document
 from docs_mcp.core.models.navigation import Category
 from docs_mcp.core.utils.logger import logger
-from docs_mcp.mcp.handlers import resources, tools
+from docs_mcp.mcp.handlers import tools
+from docs_mcp.mcp.handlers.registry import register_mcp_handlers
 from docs_mcp.web.partials import create_partials_router
 from docs_mcp.web.routes import create_docs_router
 
@@ -91,17 +90,19 @@ class DocumentationWebServer:
         self.documents = documents
         self.categories = categories
 
-        # Create the MCP server for SSE transport
-        self.mcp_server = Server("hierarchical-docs-mcp")
-        self._register_mcp_handlers()
-
-        # Create SSE transport
-        self.sse_transport = SseServerTransport("/messages/")
+        # Create the MCP server for SSE transport (only if MCP transport is enabled)
+        if self.config.enable_mcp_transport:
+            self.mcp_server = Server("hierarchical-docs-mcp")
+            register_mcp_handlers(self.mcp_server, self.documents, self.categories, self.config)
+            self.sse_transport = SseServerTransport("/messages/")
+        else:
+            self.mcp_server = None
+            self.sse_transport = None
 
         self.app = FastAPI(
-            title="Markdown MCP Documentation",
-            description="Web interface for browsing documentation with MCP SSE support",
-            version="0.1.0",
+            title=config.branding.site_name,
+            description=f"Web interface for {config.branding.site_name} with MCP SSE support",
+            version="1.0.0",
         )
 
         # Add CORS middleware
@@ -114,13 +115,22 @@ class DocumentationWebServer:
             expose_headers=["*"],
         )
 
-        # Mount static files from web/static/
+        # Mount custom static files BEFORE default (checked first by FastAPI)
+        if config.custom_static_dir and config.custom_static_dir.is_dir():
+            self.app.mount(
+                "/static/custom",
+                StaticFiles(directory=str(config.custom_static_dir)),
+                name="custom-static",
+            )
+
+        # Mount default static files from web/static/
         static_dir = Path(__file__).parent / "static"
         self.app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
         # Register routes
         self._register_routes()
-        self._register_mcp_sse_routes()
+        if self.config.enable_mcp_transport:
+            self._register_mcp_sse_routes()
 
         # Register HTMX partials BEFORE docs routes (more specific paths first)
         partials_router = create_partials_router(documents, categories, config)
@@ -129,218 +139,6 @@ class DocumentationWebServer:
         # Register server-rendered docs routes
         docs_router = create_docs_router(documents, categories, config)
         self.app.include_router(docs_router)
-
-    def _register_mcp_handlers(self) -> None:
-        """Register MCP protocol handlers for SSE transport."""
-
-        @self.mcp_server.list_tools()
-        async def list_tools() -> list[Tool]:
-            """List available tools."""
-            return [
-                Tool(
-                    name="search_documentation",
-                    description=(
-                        "Search documentation with full-text search. "
-                        "Returns results with hierarchical context (breadcrumbs)."
-                    ),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "Search query string",
-                            },
-                            "category": {
-                                "type": "string",
-                                "description": "Optional category to filter results",
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "description": "Maximum number of results (default: 10)",
-                                "default": 10,
-                            },
-                        },
-                        "required": ["query"],
-                    },
-                ),
-                Tool(
-                    name="navigate_to",
-                    description=(
-                        "Navigate to a specific URI in the documentation hierarchy. "
-                        "Returns navigation context with parent, children, and breadcrumbs."
-                    ),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "uri": {
-                                "type": "string",
-                                "description": "URI to navigate to",
-                            },
-                        },
-                        "required": ["uri"],
-                    },
-                ),
-                Tool(
-                    name="get_table_of_contents",
-                    description=(
-                        "Get the complete documentation hierarchy as a table of contents tree."
-                    ),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "max_depth": {
-                                "type": "integer",
-                                "description": "Maximum depth to include (optional)",
-                            },
-                        },
-                    },
-                ),
-                Tool(
-                    name="search_by_tags",
-                    description="Search documentation by metadata tags and category.",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "tags": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                                "description": "Tags to search for (OR logic)",
-                            },
-                            "category": {
-                                "type": "string",
-                                "description": "Category to filter by",
-                            },
-                            "limit": {
-                                "type": "integer",
-                                "description": "Maximum results",
-                                "default": 10,
-                            },
-                        },
-                        "required": ["tags"],
-                    },
-                ),
-                Tool(
-                    name="get_document",
-                    description="Get full content and metadata for a specific document by URI.",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "uri": {
-                                "type": "string",
-                                "description": "Document URI",
-                            },
-                        },
-                        "required": ["uri"],
-                    },
-                ),
-                Tool(
-                    name="get_all_tags",
-                    description=("Get a list of all unique tags defined across the documentation."),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "category": {
-                                "type": "string",
-                                "description": "Optional category to filter tags from",
-                            },
-                            "include_counts": {
-                                "type": "boolean",
-                                "description": "Include document count for each tag",
-                                "default": False,
-                            },
-                        },
-                    },
-                ),
-                Tool(
-                    name="generate_pdf_release",
-                    description=("Generate a PDF documentation release."),
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "title": {"type": "string", "description": "Document title."},
-                            "subtitle": {"type": "string", "description": "Document subtitle."},
-                            "author": {"type": "string", "description": "Document author."},
-                            "version": {"type": "string", "description": "Version string."},
-                            "confidential": {
-                                "type": "boolean",
-                                "description": "Add confidentiality markings.",
-                                "default": False,
-                            },
-                            "owner": {"type": "string", "description": "Copyright owner."},
-                        },
-                    },
-                ),
-            ]
-
-        @self.mcp_server.call_tool()
-        async def call_tool(name: str, arguments: Any) -> list[Any]:
-            """Handle tool calls."""
-            logger.info(f"MCP SSE Tool call: {name}")
-
-            if name == "search_documentation":
-                results = await tools.handle_search_documentation(
-                    arguments, self.documents, self.categories, self.config.search_limit
-                )
-                return [{"type": "text", "text": json.dumps(results, indent=2)}]
-
-            elif name == "navigate_to":
-                result = await tools.handle_navigate_to(arguments, self.documents, self.categories)
-                return [{"type": "text", "text": json.dumps(result, indent=2)}]
-
-            elif name == "get_table_of_contents":
-                result = await tools.handle_get_table_of_contents(
-                    arguments, self.documents, self.categories
-                )
-                return [{"type": "text", "text": json.dumps(result, indent=2)}]
-
-            elif name == "search_by_tags":
-                results = await tools.handle_search_by_tags(
-                    arguments, self.documents, self.config.search_limit
-                )
-                return [{"type": "text", "text": json.dumps(results, indent=2)}]
-
-            elif name == "get_document":
-                result = await tools.handle_get_document(arguments, self.documents)
-                return [{"type": "text", "text": json.dumps(result, indent=2)}]
-
-            elif name == "get_all_tags":
-                result = await tools.handle_get_all_tags(arguments, self.documents)
-                return [{"type": "text", "text": json.dumps(result, indent=2)}]
-
-            elif name == "generate_pdf_release":
-                result = await tools.handle_generate_pdf_release(
-                    arguments, Path(self.config.docs_root)
-                )
-                return [{"type": "text", "text": json.dumps(result, indent=2)}]
-
-            else:
-                raise ValueError(f"Unknown tool: {name}")
-
-        @self.mcp_server.list_resources()
-        async def list_resources() -> list[Resource]:
-            """List available resources."""
-            resource_list = await resources.list_resources(self.documents, self.categories)
-            return [
-                Resource(
-                    uri=r["uri"],
-                    name=r["name"],
-                    mimeType=r.get("mimeType", "text/markdown"),
-                    description=r.get("description"),
-                )
-                for r in resource_list
-            ]
-
-        @self.mcp_server.read_resource()
-        async def read_resource(uri: str) -> str:
-            """Read a resource by URI."""
-            from typing import cast
-
-            result = await resources.handle_resource_read(uri, self.documents, self.categories)
-
-            if "error" in result:
-                raise ValueError(result["error"])
-
-            return cast(str, result.get("text", ""))
 
     def _register_mcp_sse_routes(self) -> None:
         """Register MCP SSE transport routes."""
@@ -572,22 +370,24 @@ class DocumentationWebServer:
                 logger.error(f"Get all tags failed: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/api/generate-pdf")
-        async def generate_pdf(request: GeneratePDFRequest) -> JSONResponse:
-            """Generate PDF documentation release."""
-            try:
-                result = await tools.handle_generate_pdf_release(
-                    arguments={
-                        "title": request.title,
-                        "subtitle": request.subtitle,
-                        "author": request.author,
-                        "version": request.version,
-                        "confidential": request.confidential,
-                        "owner": request.owner,
-                    },
-                    docs_root=Path(self.config.docs_root),
-                )
-                return JSONResponse(content=result)
-            except Exception as e:
-                logger.error(f"PDF generation failed: {e}")
-                raise HTTPException(status_code=500, detail=str(e))
+        if self.config.enable_pdf_generation:
+
+            @self.app.post("/api/generate-pdf")
+            async def generate_pdf(request: GeneratePDFRequest) -> JSONResponse:
+                """Generate PDF documentation release."""
+                try:
+                    result = await tools.handle_generate_pdf_release(
+                        arguments={
+                            "title": request.title,
+                            "subtitle": request.subtitle,
+                            "author": request.author,
+                            "version": request.version,
+                            "confidential": request.confidential,
+                            "owner": request.owner,
+                        },
+                        docs_root=Path(self.config.docs_root),
+                    )
+                    return JSONResponse(content=result)
+                except Exception as e:
+                    logger.error(f"PDF generation failed: {e}")
+                    raise HTTPException(status_code=500, detail=str(e))

@@ -3,27 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Documentation{% endblock %} - Your Docs</title>
-  <meta name="description" content="{% block meta_description %}Documentation powered by Your Docs MCP{% endblock %}">
+  <title>{% block title %}Documentation{% endblock %} - {{ branding.site_name }}</title>
+  <meta name="description" content="{% block meta_description %}{{ branding.meta_description or 'Documentation powered by ' ~ branding.site_name }}{% endblock %}">
 
   {% block og_tags %}
   <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
   <meta property="og:description" content="{% block og_description %}{{ self.meta_description() }}{% endblock %}">
   <meta property="og:type" content="article">
   <meta property="og:url" content="{% block og_url %}{{ request_url | default('', true) }}{% endblock %}">
+  {% if branding.og_image_url %}
+  <meta property="og:image" content="{{ branding.og_image_url }}">
+  {% endif %}
   {% endblock %}
 
   {% block canonical %}
   <link rel="canonical" href="{{ canonical_url | default('', true) }}">
   {% endblock %}
 
+  {% if branding.favicon_url %}
+  <link rel="icon" href="{{ branding.favicon_url }}">
+  {% endif %}
+
+  {% if branding.font_cdn_url %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="{{ branding.font_cdn_url }}" rel="stylesheet">
+  {% else %}
+  <link rel="stylesheet" href="/static/vendor/fonts/fonts.css">
+  {% endif %}
 
   <link rel="stylesheet" href="/static/css/docs.css">
 
+  {% block theme_overrides %}
+  {% set css_overrides = branding.css_variable_overrides() %}
+  {% if css_overrides %}
+  <style>
+  :root {
+    {% for var, val in css_overrides.items() %}{{ var }}: {{ val }};
+    {% endfor %}
+  }
+  </style>
+  {% endif %}
+  {% if branding.custom_css %}
+  <style>{{ branding.custom_css }}</style>
+  {% endif %}
+  {% endblock %}
+
+  {% if branding.custom_css_url %}
+  <link rel="stylesheet" href="{{ branding.custom_css_url }}">
+  {% endif %}
+
   <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+
+  {% if branding.custom_js_url %}
+  <script src="{{ branding.custom_js_url }}" defer></script>
+  {% endif %}
 
   {% block head_extra %}{% endblock %}
 </head>
@@ -35,8 +69,12 @@
           <span class="hamburger-icon"></span>
         </button>
         <a href="/docs/" class="site-logo">
+          {% if branding.logo_url %}
+          <img src="{{ branding.logo_url }}" alt="{{ branding.site_name }}" class="logo-img">
+          {% else %}
           <span class="logo-icon">&#128214;</span>
-          <span class="logo-text">Documentation</span>
+          {% endif %}
+          <span class="logo-text">{{ branding.logo_text or branding.site_name }}</span>
         </a>
       </div>
 
@@ -80,7 +118,9 @@
 
   <footer class="site-footer">
     <div class="footer-content">
-      <p>Powered by <a href="https://github.com/esola-thomas/your-docs-mcp" rel="noopener noreferrer">Your Docs MCP</a></p>
+      {% if branding.show_powered_by %}
+      <p>{{ branding.footer_html | safe }}</p>
+      {% endif %}
       {% block footer_extra %}{% endblock %}
     </div>
   </footer>

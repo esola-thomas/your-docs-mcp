@@ -1,19 +1,13 @@
 """HTMX partial HTML endpoints for dynamic content."""
 
-from pathlib import Path
-
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
 from docs_mcp.core.config import ServerConfig
 from docs_mcp.core.models.document import Document
 from docs_mcp.core.models.navigation import Category
 from docs_mcp.core.services.search import search_content
 from docs_mcp.core.utils.logger import logger
-
-templates_dir = Path(__file__).parent / "templates"
-templates = Jinja2Templates(directory=str(templates_dir))
 
 
 def create_partials_router(

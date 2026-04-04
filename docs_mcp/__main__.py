@@ -2,8 +2,8 @@
 
 Entry Points:
 - your-docs-mcp: MCP server only (stdio transport, for AI clients)
-- your-docs-web: Web server only (REST API + browser UI)
-- your-docs-server: Both MCP and web server concurrently
+- your-docs-server: Web server with MCP SSE transport (for humans + API clients)
+- your-docs-web: Web server only, no MCP transport (for customer-facing deployments)
 """
 
 from __future__ import annotations
@@ -61,36 +61,8 @@ def mcp_main() -> None:
         sys.exit(1)
 
 
-def web_main() -> None:
-    """Entry point for web server only (your-docs-web command)."""
-    try:
-        from docs_mcp.web.app import DocumentationWebServer  # noqa: F401
-    except ImportError as e:
-        print(f"Missing dependency: {e}", file=sys.stderr)
-        print("Install with: pip install your-docs-mcp[web]", file=sys.stderr)
-        sys.exit(1)
-
-    try:
-        from docs_mcp.core.utils.logger import logger
-        from docs_mcp.mcp.server import serve_web_only
-
-        config = _validate_config_and_setup()
-
-        logger.info("Starting Web Server only")
-        logger.info(f"Web interface available at http://{config.web_host}:{config.web_port}")
-
-        asyncio.run(serve_web_only(config))
-
-    except KeyboardInterrupt:
-        print("\nWeb Server stopped by user", file=sys.stderr)
-        sys.exit(0)
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-
-
 def main() -> None:
-    """Entry point for both servers (your-docs-server command)."""
+    """Entry point for web + MCP server (your-docs-server command)."""
     try:
         from docs_mcp.mcp.server import serve_both  # noqa: F401
     except ImportError as e:
@@ -108,6 +80,44 @@ def main() -> None:
         config.enable_web_server = True
 
         logger.info("Starting Markdown MCP Server")
+        logger.info(
+            f"Web interface will be available at http://{config.web_host}:{config.web_port}"
+        )
+
+        asyncio.run(serve_both(config))
+
+    except KeyboardInterrupt:
+        print("\nServer stopped by user", file=sys.stderr)
+        sys.exit(0)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def web_main() -> None:
+    """Entry point for web-only server (your-docs-web command).
+
+    Runs the web UI and REST API without MCP SSE transport.
+    Suitable for customer-facing Docker deployments.
+    """
+    try:
+        from docs_mcp.mcp.server import serve_both  # noqa: F401
+    except ImportError as e:
+        print(f"Missing dependency: {e}", file=sys.stderr)
+        print(
+            "Install with: pip install your-docs-server  (or: pip install your-docs-mcp[server])",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    try:
+        from docs_mcp.core.utils.logger import logger
+
+        config = _validate_config_and_setup()
+        config.enable_web_server = True
+        config.enable_mcp_transport = False
+
+        logger.info("Starting Web-Only Documentation Server")
         logger.info(
             f"Web interface will be available at http://{config.web_host}:{config.web_port}"
         )

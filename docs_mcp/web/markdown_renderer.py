@@ -129,8 +129,11 @@ def render_markdown(content: str) -> dict[str, Any]:
 
     html = md.convert(content)
 
-    # Add copy buttons and language labels to code blocks
+    # Post-processing enhancements
     html = _enhance_code_blocks(html)
+    html = _wrap_tables(html)
+    html = _enhance_images(html)
+    html = _enhance_task_lists(html)
 
     # Extract TOC from the TocExtension
     toc_items = []
@@ -201,4 +204,47 @@ def _enhance_code_blocks(html: str) -> str:
         flags=re.DOTALL,
     )
 
+    return html
+
+
+def _wrap_tables(html: str) -> str:
+    """Wrap <table> elements in a responsive scroll container."""
+    return re.sub(
+        r"(<table[^>]*>.*?</table>)",
+        r'<div class="table-responsive">\1</div>',
+        html,
+        flags=re.DOTALL,
+    )
+
+
+def _enhance_images(html: str) -> str:
+    """Wrap standalone images in <figure> with alt text as caption."""
+    # Only wrap images that are direct children of <p> (standalone images)
+    return re.sub(
+        r"<p>\s*(<img[^>]+>)\s*</p>",
+        lambda m: f'<figure class="doc-figure">{m.group(1)}'
+        + (
+            f"<figcaption>{a.group(1)}</figcaption>"
+            if (a := re.search(r'alt="([^"]+)"', m.group(1)))
+            else ""
+        )
+        + "</figure>",
+        html,
+    )
+
+
+def _enhance_task_lists(html: str) -> str:
+    """Convert checkbox list items into styled task list items."""
+    html = re.sub(
+        r"<li>\s*\[ \]\s*",
+        '<li class="task-list-item"><input type="checkbox" disabled> ',
+        html,
+    )
+    html = re.sub(
+        r"<li>\s*\[x\]\s*",
+        '<li class="task-list-item task-list-item--checked">'
+        '<input type="checkbox" checked disabled> ',
+        html,
+        flags=re.IGNORECASE,
+    )
     return html

@@ -7,6 +7,7 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
+from jinja2 import ChoiceLoader, FileSystemLoader
 
 from docs_mcp.core.config import ServerConfig
 from docs_mcp.core.models.document import Document
@@ -16,8 +17,24 @@ from docs_mcp.core.services.search import search_content
 from docs_mcp.core.utils.logger import logger
 from docs_mcp.web.markdown_renderer import render_markdown
 
-templates_dir = Path(__file__).parent / "templates"
-templates = Jinja2Templates(directory=str(templates_dir))
+_default_templates_dir = Path(__file__).parent / "templates"
+
+
+def _create_templates(config: ServerConfig) -> Jinja2Templates:
+    """Create Jinja2Templates with optional user template directory override.
+
+    User templates shadow defaults via ChoiceLoader — users can override
+    specific templates (e.g., home.html) while inheriting the rest.
+    """
+    loaders = []
+    if config.custom_templates_dir and config.custom_templates_dir.is_dir():
+        loaders.append(FileSystemLoader(str(config.custom_templates_dir)))
+    loaders.append(FileSystemLoader(str(_default_templates_dir)))
+
+    from jinja2 import Environment
+
+    env = Environment(loader=ChoiceLoader(loaders), autoescape=True)
+    return Jinja2Templates(env=env)
 
 
 def create_docs_router(
@@ -27,6 +44,7 @@ def create_docs_router(
 ) -> APIRouter:
     """Create the /docs/* router for server-rendered pages."""
     router = APIRouter()
+    templates = _create_templates(config)
 
     doc_map = {d.uri: d for d in documents}
     ordered_docs = sorted(documents, key=lambda d: (str(d.relative_path.parent), d.order, d.title))
@@ -114,6 +132,7 @@ def create_docs_router(
         return {
             "request": request,
             "config": config,
+            "branding": config.branding,
             "nav_tree": _get_nav_tree(current_uri),
             "uri_to_url": _uri_to_url,
             "base_url": config.base_url.rstrip("/") if config.base_url else "",

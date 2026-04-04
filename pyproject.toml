@@ -32,21 +32,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-web = [
-    "fastapi>=0.104.0",
-    "uvicorn>=0.24.0",
-    "jinja2>=3.1.0",
-    "markdown>=3.5",
-    "pygments>=2.17",
-]
 server = [
-    # web deps (flattened to avoid self-referential extras in editable installs)
     "fastapi>=0.104.0",
     "uvicorn>=0.24.0",
     "jinja2>=3.1.0",
     "markdown>=3.5",
     "pygments>=2.17",
-    # server-specific deps
     "openapi-spec-validator>=0.7.0",
     "prance>=23.6.21.0",
     "watchdog>=3.0.0",
@@ -105,8 +96,8 @@ dev = [
 
 [project.scripts]
 your-docs-mcp = "docs_mcp.__main__:mcp_main"
-your-docs-web = "docs_mcp.__main__:web_main"
 your-docs-server = "docs_mcp.__main__:main"
+your-docs-web = "docs_mcp.__main__:web_main"
 
 [project.urls]
 Homepage = "https://github.com/esola-thomas/your-docs-mcp"
