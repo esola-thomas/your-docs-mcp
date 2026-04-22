@@ -222,13 +222,15 @@ def _enhance_images(html: str) -> str:
     # Only wrap images that are direct children of <p> (standalone images)
     return re.sub(
         r"<p>\s*(<img[^>]+>)\s*</p>",
-        lambda m: f'<figure class="doc-figure">{m.group(1)}'
-        + (
-            f"<figcaption>{a.group(1)}</figcaption>"
-            if (a := re.search(r'alt="([^"]+)"', m.group(1)))
-            else ""
-        )
-        + "</figure>",
+        lambda m: (
+            f'<figure class="doc-figure">{m.group(1)}'
+            + (
+                f"<figcaption>{a.group(1)}</figcaption>"
+                if (a := re.search(r'alt="([^"]+)"', m.group(1)))
+                else ""
+            )
+            + "</figure>"
+        ),
         html,
     )
 
