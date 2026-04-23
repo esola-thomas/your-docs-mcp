@@ -107,7 +107,7 @@ img {
 /* --------------------------------------------------------------------------
    Header
    -------------------------------------------------------------------------- */
-header {
+.site-header {
   height: var(--header-height);
   position: sticky;
   top: 0;
@@ -303,12 +303,92 @@ header {
 }
 
 /* --------------------------------------------------------------------------
+   Sidebar Links (used by sidebar-nav inside .sidebar)
+   -------------------------------------------------------------------------- */
+.sidebar-nav a,
+.sidebar a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  display: block;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar a:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+}
+
+.sidebar-link--active {
+  color: var(--accent-primary);
+  background-color: var(--accent-light);
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   Sidebar Tree (collapsible <details>/<summary> nav)
+   -------------------------------------------------------------------------- */
+.sidebar-tree {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-tree .sidebar-tree {
+  padding-left: 14px;
+}
+
+.sidebar-tree details > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+}
+
+.sidebar-tree details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-tree details > summary::marker {
+  content: "";
+}
+
+.sidebar-tree details > summary::before {
+  content: "";
+  flex-shrink: 0;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.sidebar-tree details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.sidebar-tree details > summary > a {
+  flex: 1;
+}
+
+/* --------------------------------------------------------------------------
    Main Content
    -------------------------------------------------------------------------- */
-main {
-  max-width: var(--content-max-width);
+#main-content {
   padding: 32px 48px;
-  margin: 0 auto;
+  /* min-width: 0 prevents the grid cell from being widened by overflowing
+     children (e.g. wide <pre> blocks) and pushing the sidebar off-screen. */
+  min-width: 0;
+}
+
+.doc-article {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: var(--content-max-width);
 }
 
 /* --------------------------------------------------------------------------
@@ -731,6 +811,54 @@ h4:hover .header-anchor,
   content: "/";
 }
 
+.breadcrumb-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+  content: "/";
+  margin-right: 8px;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.breadcrumb-item a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.breadcrumb-item a:hover {
+  color: var(--accent-primary);
+}
+
+.breadcrumb-item--current {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   Document Layout (article + page TOC)
+   -------------------------------------------------------------------------- */
+.doc-layout {
+  display: flex;
+  gap: 48px;
+  align-items: flex-start;
+}
+
 /* --------------------------------------------------------------------------
    Page Table of Contents (right sidebar)
    -------------------------------------------------------------------------- */
@@ -1001,7 +1129,7 @@ h4:hover .header-anchor,
     display: none;
   }
 
-  .sidebar.open {
+  .sidebar.sidebar--open {
     display: block;
     position: fixed;
     top: var(--header-height);
@@ -1013,7 +1141,7 @@ h4:hover .header-anchor,
     box-shadow: var(--shadow-md);
   }
 
-  main {
+  #main-content {
     padding: 24px;
   }
 
@@ -1038,7 +1166,7 @@ h4:hover .header-anchor,
     grid-template-columns: 1fr;
   }
 
-  header {
+  .site-header {
     padding: 0 16px;
   }
 
@@ -1092,7 +1220,7 @@ h4:hover .header-anchor,
    -------------------------------------------------------------------------- */
 @media print {
   .sidebar,
-  header,
+  .site-header,
   footer,
   .page-toc,
   .prev-next,
@@ -1107,7 +1235,7 @@ h4:hover .header-anchor,
     grid-template-columns: 1fr;
   }
 
-  main {
+  #main-content {
     max-width: 100%;
     padding: 0;
   }
