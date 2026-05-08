@@ -183,16 +183,47 @@ def create_docs_router(
         ctx.update({"query": q, "results": results})
         return templates.TemplateResponse(request, "search.html", ctx)
 
+    def _build_all_tags(docs: list[Document]) -> list[dict[str, Any]]:
+        """Aggregate frontmatter tags into the shape tags.html expects.
+
+        Returns a list of {name, count, size} sorted alphabetically. ``size``
+        is a 1..5 bucket derived from ``count`` so the tag cloud template can
+        render a weighted display via ``tag-cloud-item--size-N``.
+        """
+        counts: dict[str, int] = {}
+        for d in docs:
+            for tag in d.tags:
+                counts[tag] = counts.get(tag, 0) + 1
+
+        if not counts:
+            return []
+
+        max_count = max(counts.values())
+        min_count = min(counts.values())
+        spread = max_count - min_count
+
+        def bucket(count: int) -> int:
+            if spread == 0:
+                return 3
+            scaled = (count - min_count) / spread
+            return max(1, min(5, 1 + round(scaled * 4)))
+
+        return [
+            {"name": name, "count": count, "size": bucket(count)}
+            for name, count in sorted(counts.items())
+        ]
+
     @router.get("/docs/tags/", response_class=HTMLResponse)
     async def docs_all_tags(request: Request) -> Response:
         """All tags page."""
-        tag_counts: dict[str, int] = {}
-        for doc in documents:
-            for tag in doc.tags:
-                tag_counts[tag] = tag_counts.get(tag, 0) + 1
-
         ctx = _base_context(request)
-        ctx.update({"tag": None, "tag_counts": tag_counts, "documents_for_tag": []})
+        ctx.update(
+            {
+                "tag": None,
+                "all_tags": _build_all_tags(documents),
+                "documents": [],
+            }
+        )
         return templates.TemplateResponse(request, "tags.html", ctx)
 
     @router.get("/docs/tags/{tag}", response_class=HTMLResponse)
@@ -200,18 +231,12 @@ def create_docs_router(
         """Documents filtered by tag."""
         matching_docs = [d for d in documents if tag in d.tags]
 
-        tag_counts: dict[str, int] = {}
-        for doc in documents:
-            for t in doc.tags:
-                tag_counts[t] = tag_counts.get(t, 0) + 1
-
         ctx = _base_context(request)
         ctx.update(
             {
                 "tag": tag,
-                "tag_counts": tag_counts,
-                "documents_for_tag": [_doc_to_template(d) for d in matching_docs],
-                "uri_to_url": _uri_to_url,
+                "all_tags": _build_all_tags(documents),
+                "documents": [_doc_to_template(d) for d in matching_docs],
             }
         )
         return templates.TemplateResponse(request, "tags.html", ctx)

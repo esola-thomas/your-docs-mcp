@@ -182,15 +182,26 @@ class TestDocsTags:
         r = web_client.get("/docs/tags/")
         assert r.status_code == 200
         assert "text/html" in r.headers["content-type"]
+        # Tags from the fixture documents must render in the cloud, not the
+        # empty-state. Regression guard for the routes/template variable
+        # contract — the template reads ``all_tags``.
+        assert "tag-cloud-item" in r.text
+        assert ">intro<" in r.text
+        assert ">advanced<" in r.text
+        assert "No tags have been created yet." not in r.text
 
     def test_specific_tag(self, web_client):
         r = web_client.get("/docs/tags/intro")
         assert r.status_code == 200
         assert "intro" in r.text
+        # Per-tag page must list matching documents (not "0 documents").
+        assert "doc-list-item" in r.text
+        assert "0 documents with this tag" not in r.text
 
     def test_unknown_tag_shows_empty(self, web_client):
         r = web_client.get("/docs/tags/nonexistent")
         assert r.status_code == 200
+        assert "0 documents with this tag" in r.text
 
 
 class TestSEO:
