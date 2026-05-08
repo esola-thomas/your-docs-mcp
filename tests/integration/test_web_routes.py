@@ -144,11 +144,13 @@ class TestNestedDocsRoutes:
         r = web_client_nested.get("/docs/guides/advanced/")
         assert r.status_code == 200
         assert "Advanced" in r.text
+        assert "Performance Guide" in r.text
 
     def test_nested_document_page(self, web_client_nested):
         r = web_client_nested.get("/docs/guides/advanced/performance")
         assert r.status_code == 200
         assert "Performance Guide" in r.text
+        assert "Tune performance." in r.text
 
 
 class TestDocsSearch:
