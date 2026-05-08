@@ -216,10 +216,10 @@ def create_docs_router(
         )
         return templates.TemplateResponse(request, "tags.html", ctx)
 
-    @router.get("/docs/{category}/", response_class=HTMLResponse)
-    async def docs_category(request: Request, category: str) -> Response:
+    @router.get("/docs/{category_path:path}/", response_class=HTMLResponse)
+    async def docs_category(request: Request, category_path: str) -> Response:
         """Category listing page."""
-        category_uri = f"docs://{category}"
+        category_uri = f"docs://{category_path.strip('/')}"
 
         if category_uri not in categories:
             ctx = _base_context(request)
@@ -248,10 +248,10 @@ def create_docs_router(
         )
         return templates.TemplateResponse(request, "category.html", ctx)
 
-    @router.get("/docs/{category}/{slug}", response_class=HTMLResponse)
-    async def docs_document(request: Request, category: str, slug: str) -> Response:
+    @router.get("/docs/{doc_path:path}", response_class=HTMLResponse)
+    async def docs_document(request: Request, doc_path: str) -> Response:
         """Individual document page."""
-        doc_uri = f"docs://{category}/{slug}"
+        doc_uri = f"docs://{doc_path.strip('/')}"
         doc = doc_map.get(doc_uri)
 
         if not doc:

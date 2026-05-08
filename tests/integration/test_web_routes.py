@@ -40,6 +40,31 @@ def web_client(docs_with_content):
     return TestClient(server.app, raise_server_exceptions=False)
 
 
+@pytest.fixture
+def docs_with_nested_content(tmp_path):
+    """Create a docs directory with nested category/document content."""
+    docs_root = tmp_path / "docs"
+    nested = docs_root / "guides" / "advanced"
+    nested.mkdir(parents=True)
+    (nested / "performance.md").write_text(
+        "---\ntitle: Performance Guide\ntags: [advanced]\norder: 1\n---\n"
+        "# Performance Guide\n\nTune performance.\n"
+    )
+    return docs_root
+
+
+@pytest.fixture
+def web_client_nested(docs_with_nested_content):
+    """Create a test client for nested route behavior."""
+    from docs_mcp.core.services.markdown import scan_markdown_files
+
+    docs = scan_markdown_files(docs_with_nested_content, docs_with_nested_content)
+    cats = build_category_tree(docs)
+    config = ServerConfig(docs_root=str(docs_with_nested_content))
+    server = DocumentationWebServer(config=config, documents=docs, categories=cats)
+    return TestClient(server.app, raise_server_exceptions=False)
+
+
 class TestDocsHome:
     """Test the /docs/ landing page."""
 
@@ -110,6 +135,20 @@ class TestDocsDocument:
         r = web_client.get("/docs/guides/getting-started")
         # Should have a link to the next doc (Advanced Usage)
         assert "Advanced" in r.text or "advanced" in r.text
+
+
+class TestNestedDocsRoutes:
+    """Test nested category and document route resolution."""
+
+    def test_nested_category_page(self, web_client_nested):
+        r = web_client_nested.get("/docs/guides/advanced/")
+        assert r.status_code == 200
+        assert "Advanced" in r.text
+
+    def test_nested_document_page(self, web_client_nested):
+        r = web_client_nested.get("/docs/guides/advanced/performance")
+        assert r.status_code == 200
+        assert "Performance Guide" in r.text
 
 
 class TestDocsSearch:
