@@ -199,3 +199,28 @@ jobs:
           fi
 
           echo "✅ All required checks passed"
+
+  package-smoke:
+    name: Wheel smoke on Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build both packages
+        run: |
+          pip install build
+          python -m build
+          python -m build packages/your-docs-server --outdir server-dist
+      - name: Smoke base install
+        run: |
+          pip install dist/*.whl
+          python scripts/smoke_install.py
+      - name: Smoke server install
+        run: |
+          pip install "your-docs-mcp[server]" server-dist/*.whl
+          python scripts/smoke_install.py --web

@@ -19,7 +19,7 @@ from docs_mcp.core.models.document import Document
 from docs_mcp.core.models.navigation import Category
 from docs_mcp.core.utils.logger import logger
 from docs_mcp.mcp.handlers import tools
-from docs_mcp.mcp.handlers.registry import register_mcp_handlers
+from docs_mcp.mcp.handlers.registry import create_mcp_server
 from docs_mcp.web.partials import create_partials_router
 from docs_mcp.web.routes import create_docs_router
 
@@ -91,9 +91,10 @@ class DocumentationWebServer:
         self.categories = categories
 
         # Create the MCP server for SSE transport (only if MCP transport is enabled)
+        self.mcp_server: Server | None = None
+        self.sse_transport: SseServerTransport | None = None
         if self.config.enable_mcp_transport:
-            self.mcp_server = Server("hierarchical-docs-mcp")
-            register_mcp_handlers(self.mcp_server, self.documents, self.categories, self.config)
+            self.mcp_server = create_mcp_server(self.documents, self.categories, self.config)
             self.sse_transport = SseServerTransport("/messages/")
         else:
             self.mcp_server = None
@@ -143,19 +144,23 @@ class DocumentationWebServer:
     def _register_mcp_sse_routes(self) -> None:
         """Register MCP SSE transport routes."""
 
+        mcp_server = self.mcp_server
+        transport = self.sse_transport
+        assert mcp_server is not None and transport is not None
+
         async def sse_endpoint(request: Request) -> StarletteResponse:
             """SSE endpoint for MCP clients."""
             logger.info("MCP SSE client connecting...")
 
-            async with self.sse_transport.connect_sse(
+            async with transport.connect_sse(
                 request.scope,
                 request.receive,
-                request._send,  # type: ignore[arg-type]
+                request._send,
             ) as streams:
-                await self.mcp_server.run(
+                await mcp_server.run(
                     streams[0],
                     streams[1],
-                    self.mcp_server.create_initialization_options(),
+                    mcp_server.create_initialization_options(),
                 )
 
             return StarletteResponse()
@@ -163,7 +168,7 @@ class DocumentationWebServer:
         sse_routes_app = Starlette(
             routes=[
                 Route("/sse", endpoint=sse_endpoint, methods=["GET"]),
-                Mount("/messages/", app=self.sse_transport.handle_post_message),
+                Mount("/messages/", app=transport.handle_post_message),
             ]
         )
 

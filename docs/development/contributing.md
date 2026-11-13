@@ -13,7 +13,7 @@ Thank you for your interest in contributing to the Hierarchical Documentation MC
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - Git
 - Virtual environment tool (venv, virtualenv, or conda)
 

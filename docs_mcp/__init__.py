@@ -4,5 +4,5 @@ An MCP server that enables AI assistants to navigate and query documentation
 through hierarchical structures, supporting markdown files and OpenAPI specifications.
 """
 
-__version__ = "1.1.2"
+__version__ = "2.0.0"
 __all__ = ["__version__"]

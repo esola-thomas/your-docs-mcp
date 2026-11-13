@@ -11,7 +11,7 @@ This guide covers installing the Hierarchical Documentation MCP server.
 
 ## Prerequisites
 
-- Python 3.10 or higher
+- Python 3.11 or higher
 - pip (Python package installer)
 - Git (optional, for development installation)
 
@@ -62,7 +62,8 @@ The package automatically installs:
 
 | Package | Purpose |
 |---------|---------|
-| `mcp>=0.1.0` | Model Context Protocol SDK |
+| `mcp>=2.3.0,<3` | Model Context Protocol SDK |
+| `jsonschema>=4.20.0` | MCP tool input validation |
 | `chromadb>=0.4.0` | Vector database for semantic search |
 | `sentence-transformers>=2.2.2` | Embedding model for search |
 | `fastapi>=0.104.0` | Web API framework |
@@ -157,7 +158,7 @@ Verify Python version:
 
 ```bash
 python --version
-# Should be 3.10 or higher
+# Should be 3.11 or higher
 ```
 
 ### Package Not Found After Install

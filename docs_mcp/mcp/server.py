@@ -2,7 +2,6 @@
 
 import asyncio
 
-from mcp.server import Server
 from mcp.server.stdio import stdio_server
 
 from docs_mcp.core.config import ServerConfig
@@ -11,7 +10,7 @@ from docs_mcp.core.models.navigation import Category
 from docs_mcp.core.services.hierarchy import build_category_tree
 from docs_mcp.core.services.markdown import scan_markdown_files
 from docs_mcp.core.utils.logger import logger
-from docs_mcp.mcp.handlers.registry import register_mcp_handlers
+from docs_mcp.mcp.handlers.registry import create_mcp_server
 
 
 def _get_vector_store():  # type: ignore[no-untyped-def]
@@ -30,11 +29,10 @@ class DocumentationMCPServer:
     def __init__(self, config: ServerConfig) -> None:
         """Initialize the server."""
         self.config = config
-        self.server = Server("hierarchical-docs-mcp")
         self.documents: list[Document] = []
         self.categories: dict[str, Category] = {}
 
-        register_mcp_handlers(self.server, self.documents, self.categories, self.config)
+        self.server = create_mcp_server(self.documents, self.categories, self.config)
 
     async def initialize(self) -> None:
         """Initialize the server by loading documentation."""
@@ -60,7 +58,7 @@ class DocumentationMCPServer:
                 logger.error(f"Failed to load documentation from {source.path}: {e}")
 
         if self.documents:
-            self.categories = build_category_tree(self.documents)
+            self.categories.update(build_category_tree(self.documents))
             logger.info(f"Built category tree with {len(self.categories)} categories")
 
             try:
@@ -156,6 +154,7 @@ async def serve_both(config: ServerConfig) -> None:
         tasks.append(asyncio.create_task(run_web_server()))
         await asyncio.sleep(0.1)
 
-    tasks.append(asyncio.create_task(run_mcp_server()))
+    if config.enable_mcp_transport:
+        tasks.append(asyncio.create_task(run_mcp_server()))
 
     await asyncio.gather(*tasks)
