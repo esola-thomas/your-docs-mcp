@@ -148,3 +148,8 @@ MIT - see [LICENSE](LICENSE) for details.
 - [Issue tracker](https://github.com/esola-thomas/your-docs-mcp/issues)
 - [Documentation](docs/)
 - [MCP specification](https://modelcontextprotocol.io)
+
+## Version 2 compatibility
+
+Version 2 requires Python 3.11+ and MCP SDK 2.3+. Existing stdio and SSE configurations
+continue to work. See the [migration guide](docs/guides/mcp-sdk-v2.md) before upgrading.

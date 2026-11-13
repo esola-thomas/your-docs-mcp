@@ -41,7 +41,7 @@ docs_mcp/
 
 ## Conventions
 
-- **Ruff**: line-length 100, target py310, select E/F/I/N/W/UP, ignore E501
+- **Ruff**: line-length 100, target py311, select E/F/I/N/W/UP, ignore E501
 - **Type hints**: required on all public interfaces
 - **Async**: use async/await for all I/O operations
 - **Models**: Pydantic v2 with strict typing

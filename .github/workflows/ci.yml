@@ -96,7 +96,12 @@ jobs:
 
       - name: Test CLI entry point
         run: |
-          docs-mcp --help || true
+          python scripts/smoke_install.py
+
+      - name: Test server extras and convenience package
+        run: |
+          pip install "your-docs-mcp[server]" ./packages/your-docs-server
+          python scripts/smoke_install.py --web
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7

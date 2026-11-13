@@ -158,27 +158,20 @@ All tools return consistent error responses:
 
 The server uses the official MCP Python SDK:
 
-```python
-from mcp.server import Server
-from mcp.types import Tool, Resource
+The shared factory in `docs_mcp/mcp/handlers/registry.py` constructs the SDK 2.x low-level
+`Server` for stdio and SSE. It registers `on_list_tools`, `on_call_tool`,
+`on_list_resources`, and `on_read_resource` constructor callbacks. Callbacks accept
+request context and typed parameters, and return explicit MCP result objects.
 
-server = Server("hierarchical-docs-mcp")
+Tool input schemas are validated with `jsonschema` before dispatch. Raised tool
+failures become `CallToolResult(is_error=True)`; missing resources produce a
+protocol error. Existing tool payloads remain JSON text and resource content
+remains Markdown. SDK fields use snake_case in Python; MCP JSON keeps camelCase.
 
-@server.list_tools()
-async def list_tools() -> list[Tool]:
-    return [
-        Tool(
-            name="search_documentation",
-            description="Search documentation",
-            inputSchema={...}
-        )
-    ]
+Documents and categories are shared mutable collections populated during startup.
+The category dictionary must be updated in place so registered callbacks see it.
 
-@server.call_tool()
-async def call_tool(name: str, arguments: Any):
-    # Handle tool calls
-    pass
-```
+See [MCP SDK 2 migration](../guides/mcp-sdk-v2.md) for installation compatibility.
 
 ## Next Steps
 

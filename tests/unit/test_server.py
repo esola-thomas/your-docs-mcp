@@ -174,3 +174,19 @@ class TestServeFunction:
 
                 # Verify run was called
                 mock_run.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_web_only_does_not_run_stdio(tmp_path):
+    """Web-only deployments must not block on or consume stdin."""
+    from docs_mcp.mcp.server import serve_both
+
+    config = ServerConfig(docs_root=tmp_path, enable_web_server=True, enable_mcp_transport=False)
+    with (
+        patch.object(DocumentationMCPServer, "initialize", new_callable=AsyncMock),
+        patch.object(DocumentationMCPServer, "run", new_callable=AsyncMock) as stdio_run,
+        patch("uvicorn.Server.serve", new_callable=AsyncMock) as web_run,
+    ):
+        await serve_both(config)
+    stdio_run.assert_not_called()
+    web_run.assert_awaited_once()

@@ -6,12 +6,26 @@ resource listing, and resource reading — used by both DocumentationMCPServer
 """
 
 import json
-from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
-from mcp.server import Server
-from mcp.types import Resource, Tool
+from jsonschema import Draft202012Validator
+from mcp import MCPError
+from mcp.server import Server, ServerRequestContext
+from mcp.types import (
+    CallToolRequestParams,
+    CallToolResult,
+    ListResourcesResult,
+    ListToolsResult,
+    PaginatedRequestParams,
+    ReadResourceRequestParams,
+    ReadResourceResult,
+    Resource,
+    TextContent,
+    TextResourceContents,
+    Tool,
+)
 
+from docs_mcp import __version__
 from docs_mcp.core.config import ServerConfig
 from docs_mcp.core.models.document import Document
 from docs_mcp.core.models.navigation import Category
@@ -34,7 +48,7 @@ def get_tool_definitions(*, enable_pdf: bool = False) -> list[Tool]:
                 "Search documentation with full-text search. "
                 "Returns results with hierarchical context (breadcrumbs)."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "query": {
@@ -60,7 +74,7 @@ def get_tool_definitions(*, enable_pdf: bool = False) -> list[Tool]:
                 "Navigate to a specific URI in the documentation hierarchy. "
                 "Returns navigation context with parent, children, and breadcrumbs."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "uri": {
@@ -74,7 +88,7 @@ def get_tool_definitions(*, enable_pdf: bool = False) -> list[Tool]:
         Tool(
             name="get_table_of_contents",
             description=("Get the complete documentation hierarchy as a table of contents tree."),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "max_depth": {
@@ -87,7 +101,7 @@ def get_tool_definitions(*, enable_pdf: bool = False) -> list[Tool]:
         Tool(
             name="search_by_tags",
             description="Search documentation by metadata tags and category.",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "tags": {
@@ -111,7 +125,7 @@ def get_tool_definitions(*, enable_pdf: bool = False) -> list[Tool]:
         Tool(
             name="get_document",
             description="Get full content and metadata for a specific document by URI.",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "uri": {
@@ -128,7 +142,7 @@ def get_tool_definitions(*, enable_pdf: bool = False) -> list[Tool]:
                 "Get a list of all unique tags defined across the documentation. "
                 "Optionally filter by category and include document counts per tag."
             ),
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "category": {
@@ -154,7 +168,7 @@ def get_tool_definitions(*, enable_pdf: bool = False) -> list[Tool]:
                     "with all documentation, table of contents, and optional "
                     "confidentiality markings (watermark, headers, footers)."
                 ),
-                inputSchema={
+                input_schema={
                     "type": "object",
                     "properties": {
                         "title": {
@@ -199,30 +213,36 @@ def get_tool_definitions(*, enable_pdf: bool = False) -> list[Tool]:
     return tools_list
 
 
-def register_mcp_handlers(
-    server: Server,
+def create_mcp_server(
     documents: list[Document],
     categories: dict[str, Category],
     config: ServerConfig,
-) -> None:
-    """Register all MCP protocol handlers on a Server instance.
+) -> Server:
+    """Construct a v2 SDK server with shared tool and resource adapters.
 
     Closures capture documents/categories by reference so they see
     data populated later by initialize().
 
     Args:
-        server: MCP Server instance (stdio or SSE transport)
         documents: Mutable list of loaded documents
         categories: Mutable dict of category tree
         config: Server configuration
     """
 
-    @server.list_tools()
-    async def list_tools() -> list[Tool]:
-        return get_tool_definitions(enable_pdf=config.enable_pdf_generation)
+    definitions = {
+        tool.name: tool for tool in get_tool_definitions(enable_pdf=config.enable_pdf_generation)
+    }
+    validators = {
+        name: Draft202012Validator(tool.input_schema) for name, tool in definitions.items()
+    }
 
-    @server.call_tool()
-    async def call_tool(name: str, arguments: Any) -> list[Any]:
+    async def list_tools(
+        ctx: ServerRequestContext,
+        params: PaginatedRequestParams | None,
+    ) -> ListToolsResult:
+        return ListToolsResult(tools=list(definitions.values()))
+
+    async def dispatch_tool(name: str, arguments: dict[str, Any]) -> list[Any]:
         logger.info(f"Tool call: {name}")
 
         if name == "search_documentation":
@@ -252,32 +272,72 @@ def register_mcp_handlers(
             return [{"type": "text", "text": json.dumps(result, indent=2)}]
 
         elif name == "generate_pdf_release":
-            if not config.enable_pdf_generation:
-                raise ValueError(
-                    "PDF generation is disabled. Set MCP_DOCS_ENABLE_PDF_GENERATION=true to enable."
-                )
-            result = await tools.handle_generate_pdf_release(arguments, Path(config.docs_root))
+            if config.docs_root is None:
+                raise ValueError("PDF generation requires a configured docs_root")
+            result = await tools.handle_generate_pdf_release(arguments, config.docs_root)
             return [{"type": "text", "text": json.dumps(result, indent=2)}]
 
         else:
             raise ValueError(f"Unknown tool: {name}")
 
-    @server.list_resources()
-    async def list_resources_handler() -> list[Resource]:
-        resource_list = await resources.list_resources(documents, categories)
-        return [
-            Resource(
-                uri=r["uri"],
-                name=r["name"],
-                mimeType=r.get("mimeType", "text/markdown"),
-                description=r.get("description"),
+    async def call_tool(
+        ctx: ServerRequestContext,
+        params: CallToolRequestParams,
+    ) -> CallToolResult:
+        # v2's low-level server no longer validates or wraps tool calls.
+        try:
+            if params.name not in definitions:
+                raise ValueError(f"Unknown or disabled tool: {params.name}")
+            arguments = params.arguments or {}
+            validators[params.name].validate(arguments)
+            content = await dispatch_tool(params.name, arguments)
+            return CallToolResult(content=[TextContent(**item) for item in content])
+        except Exception as exc:
+            logger.warning(f"Tool {params.name} failed: {exc}")
+            return CallToolResult(
+                content=[TextContent(type="text", text=str(exc))],
+                is_error=True,
             )
-            for r in resource_list
-        ]
 
-    @server.read_resource()
-    async def read_resource(uri: str) -> str:
-        result = await resources.handle_resource_read(uri, documents, categories)
+    async def list_resources_handler(
+        ctx: ServerRequestContext,
+        params: PaginatedRequestParams | None,
+    ) -> ListResourcesResult:
+        resource_list = await resources.list_resources(documents, categories)
+        return ListResourcesResult(
+            resources=[
+                Resource(
+                    uri=r["uri"],
+                    name=r["name"],
+                    mime_type=r.get("mimeType", "text/markdown"),
+                    description=r.get("description"),
+                )
+                for r in resource_list
+            ]
+        )
+
+    async def read_resource(
+        ctx: ServerRequestContext,
+        params: ReadResourceRequestParams,
+    ) -> ReadResourceResult:
+        result = await resources.handle_resource_read(params.uri, documents, categories)
         if "error" in result:
-            raise ValueError(result["error"])
-        return cast(str, result.get("text", ""))
+            raise MCPError(-32602, result["error"])
+        return ReadResourceResult(
+            contents=[
+                TextResourceContents(
+                    uri=params.uri,
+                    text=result.get("text", ""),
+                    mime_type=result.get("mimeType", "text/markdown"),
+                )
+            ]
+        )
+
+    return Server(
+        "hierarchical-docs-mcp",
+        version=__version__,
+        on_list_tools=list_tools,
+        on_call_tool=call_tool,
+        on_list_resources=list_resources_handler,
+        on_read_resource=read_resource,
+    )

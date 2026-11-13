@@ -43,3 +43,8 @@ The web UI is available at `http://127.0.0.1:8123/docs/` with:
 | `pip install "your-docs-mcp[full]"` | Everything (+ vector search + PDF generation) |
 
 For full documentation, configuration, and API reference, see the [main project repository](https://github.com/esola-thomas/your-docs-mcp).
+
+## Version 2 compatibility
+
+Requires Python 3.11+ and `your-docs-mcp[server]>=2.0.0,<3`. Upgrade the main package
+before installing this convenience package from local wheels.
